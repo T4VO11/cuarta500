@@ -1,224 +1,421 @@
-const Usuario = require('../../models/Usuario'); // RUTA CORREGIDA
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken'); // Necesitarás 'jsonwebtoken'
+const Usuario = require('../../models/Usuario');
+const jwt = require('jsonwebtoken');
+const JsonResponse = require('../../utils/JsonResponse');
+const Encryption = require('../../utils/encryption');
+const mongoose = require('mongoose');
+const { buildImageUrl } = require('../../utils/imageUrlHelper');
 
-// Crear un nuevo usuario (Registro)
-exports.crearUsuario = async (req, res) => {
-    // NOTA: Esta función 'crearUsuario' ahora tiene dos lógicas:
-    // 1. Registro público (ej. un admin se registra por primera vez)
-    // 2. Creación por un dueño (ej. un dueño añade un habitante)
-    // Para el caso 2, necesitaríamos 'authMiddleware' en la ruta.
-
-    const { nombre, email, password, rol } = req.body;
-    let { condominioId, dueñoId } = req.body; // Los IDs pueden variar
-
-    // authInfo nos dirá si un usuario autenticado está creando a otro
-    const authInfo = req.usuario; // Vendrá del authMiddleware (si la ruta está protegida)
-
+/**
+ * Obtener todos los usuarios (index)
+ * GET /usuarios
+ */
+exports.index = async (req, res) => {
     try {
-        // 1. Verificar si el email ya existe
-        let usuario = await Usuario.findOne({ email });
-        if (usuario) {
-            return res.status(400).json({ msg: 'El email ya está registrado' });
-        }
-
-        // 2. Crear nuevo usuario
-        usuario = new Usuario(req.body);
-
-        // LÓGICA DE JERARQUÍA (Dueño creando habitante)
-        if (authInfo && authInfo.rol === 'dueño' && (rol === 'habitante' || rol === 'arrendatario')) {
-            // Si el que crea es un 'dueño', forzamos los datos correctos
-            usuario.dueñoId = authInfo.id; // El creador es el dueño
-            usuario.condominioId = authInfo.condominioId; // Del condominio del dueño
-        } else if (rol === 'habitante' || rol === 'arrendatario') {
-            // Si no es un dueño creando (ej. un admin), el dueñoId debe venir en el body
-            if (!dueñoId) {
-                return res.status(400).json({ msg: 'Se requiere dueñoId para este rol' });
-            }
-        }
-        // (Si es un admin creando a un 'dueño', el condominioId vendrá en el body)
-
-        // 3. Hashear el password
-        const salt = await bcrypt.genSalt(10);
-        usuario.password = await bcrypt.hash(password, salt);
-
-        // 4. Guardar en BD
-        await usuario.save();
+        const usuarios = await Usuario.find({ condominio_id: 'C500' })
+            .sort({ usuario_id: 1 });
         
-        // Ocultamos password del objeto de respuesta
-        usuario.password = undefined;
+        // Construir URLs públicas para imágenes
+        const usuariosConUrls = usuarios.map(usuario => {
+            const usuarioObj = usuario.toObject();
+            if (usuarioObj.documentos?.imagen_perfil_url) {
+                usuarioObj.documentos.imagen_perfil_url = buildImageUrl(req, usuarioObj.documentos.imagen_perfil_url);
+            }
+            if (usuarioObj.documentos?.imagen_ine_url) {
+                usuarioObj.documentos.imagen_ine_url = buildImageUrl(req, usuarioObj.documentos.imagen_ine_url);
+            }
+            return usuarioObj;
+        });
 
-        res.status(201).json({ msg: 'Usuario creado exitosamente', usuario });
+        // Opción para cifrar la respuesta (usar query param ?encrypt=true)
+        if (req.query.encrypt === 'true') {
+            const responseData = {
+                estado: 'exito',
+                mensaje: 'Usuarios obtenidos exitosamente',
+                data: usuariosConUrls
+            };
+            const encryptedResponse = Encryption.encryptResponse(responseData);
+            return res.json(encryptedResponse);
+        }
 
+        return JsonResponse.success(res, usuariosConUrls, 'Usuarios obtenidos exitosamente');
     } catch (error) {
-        console.error(error.message);
-        res.status(500).send('Error en el servidor');
+        console.error('Error en index usuarios:', error);
+        return JsonResponse.error(res, 'Error al obtener usuarios', 500);
     }
 };
 
-// Login de usuario
-exports.loginUsuario = async (req, res) => {
-    const { email, password } = req.body;
-
+/**
+ * Obtener un usuario por ID (show)
+ * GET /usuarios/:id
+ * Acepta tanto ObjectId (_id) como usuario_id (número)
+ */
+exports.show = async (req, res) => {
     try {
-        // 1. Verificar si existe
-        const usuario = await Usuario.findOne({ email }).select('+password'); // Incluir password
+        let usuario;
+        
+        // Intentar buscar por ObjectId primero
+        if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+            usuario = await Usuario.findById(req.params.id);
+        }
+        
+        // Si no se encontró por ObjectId, intentar por usuario_id
         if (!usuario) {
-            return res.status(400).json({ msg: 'Email o password incorrectos' });
+            const usuarioIdNum = parseInt(req.params.id);
+            if (!isNaN(usuarioIdNum)) {
+                usuario = await Usuario.findOne({ usuario_id: usuarioIdNum });
+            }
         }
 
-        // 2. Verificar si está activo
-        if (!usuario.activo) {
-            return res.status(403).json({ msg: 'El usuario no está activo. Contacte al administrador.' });
+        // Validar que el usuario exista
+        if (!usuario) {
+            return JsonResponse.notFound(res, 'Usuario no encontrado');
         }
 
-        // 3. Verificar password
-        const passCorrecto = await bcrypt.compare(password, usuario.password);
-        if (!passCorrecto) {
-            return res.status(400).json({ msg: 'Email o password incorrectos' });
+        // Construir URLs públicas para imágenes
+        const usuarioObj = usuario.toObject();
+        if (usuarioObj.documentos?.imagen_perfil_url) {
+            usuarioObj.documentos.imagen_perfil_url = buildImageUrl(req, usuarioObj.documentos.imagen_perfil_url);
+        }
+        if (usuarioObj.documentos?.imagen_ine_url) {
+            usuarioObj.documentos.imagen_ine_url = buildImageUrl(req, usuarioObj.documentos.imagen_ine_url);
         }
 
-        // 4. Crear y firmar el JWT
+        // Opción para cifrar la respuesta
+        if (req.query.encrypt === 'true') {
+            const responseData = {
+                estado: 'exito',
+                mensaje: 'Usuario obtenido exitosamente',
+                data: usuarioObj
+            };
+            const encryptedResponse = Encryption.encryptResponse(responseData);
+            return res.json(encryptedResponse);
+        }
+
+        return JsonResponse.success(res, usuarioObj, 'Usuario obtenido exitosamente');
+    } catch (error) {
+        console.error('Error en show usuario:', error);
+        return JsonResponse.error(res, 'Error al obtener usuario', 500);
+    }
+};
+
+/**
+ * Crear un nuevo usuario (store)
+ * POST /usuarios
+ */
+exports.store = async (req, res) => {
+    try {
+        const {
+            usuario_id,
+            username,
+            password,
+            rol,
+            nombre,
+            apellido_paterno,
+            apellido_materno,
+            numero_casa,
+            email,
+            telefono,
+            documentos,
+            perfil_detalle
+        } = req.body;
+
+        // Verificar si el usuario_id ya existe
+        const usuarioExistente = await Usuario.findOne({ 
+            $or: [
+                { usuario_id },
+                { username },
+                { email }
+            ]
+        });
+
+        if (usuarioExistente) {
+            return JsonResponse.error(res, 'El usuario_id, username o email ya existe', 400);
+        }
+
+        // Manejar archivos subidos
+        let documentosData = {};
+        if (documentos) {
+            try {
+                documentosData = typeof documentos === 'string' ? JSON.parse(documentos) : documentos;
+            } catch {
+                documentosData = documentos;
+            }
+        }
+        if (req.files) {
+            if (req.files.imagen_perfil && req.files.imagen_perfil[0]) {
+                documentosData.imagen_perfil_url = `usuarios/${req.files.imagen_perfil[0].filename}`;
+            }
+            if (req.files.imagen_ine && req.files.imagen_ine[0]) {
+                documentosData.imagen_ine_url = `usuarios/${req.files.imagen_ine[0].filename}`;
+            }
+        }
+
+        // Crear nuevo usuario
+        const nuevoUsuario = new Usuario({
+            usuario_id,
+            condominio_id: 'C500',
+            username,
+            password, // Se hasheará automáticamente en el pre-save hook
+            rol,
+            nombre,
+            apellido_paterno,
+            apellido_materno,
+            numero_casa: numero_casa || '',
+            email,
+            telefono,
+            documentos: documentosData,
+            perfil_detalle: perfil_detalle ? (typeof perfil_detalle === 'string' ? JSON.parse(perfil_detalle) : perfil_detalle) : {}
+        });
+
+        await nuevoUsuario.save();
+
+        const usuarioObj = nuevoUsuario.toObject();
+
+        // Construir URLs públicas para imágenes si existen
+        if (usuarioObj.documentos?.imagen_perfil_url) {
+            usuarioObj.documentos.imagen_perfil_url = buildImageUrl(req, usuarioObj.documentos.imagen_perfil_url);
+        }
+        if (usuarioObj.documentos?.imagen_ine_url) {
+            usuarioObj.documentos.imagen_ine_url = buildImageUrl(req, usuarioObj.documentos.imagen_ine_url);
+        }
+
+        // NOTA: El registro NO devuelve token según los requisitos
+        return JsonResponse.success(res, usuarioObj, 'Usuario creado exitosamente', 201);
+    } catch (error) {
+        console.error('Error en store usuario:', error);
+        if (error.code === 11000) {
+            return JsonResponse.error(res, 'El usuario_id, username o email ya existe', 400);
+        }
+        return JsonResponse.error(res, 'Error al crear usuario', 500);
+    }
+};
+
+/**
+ * Actualizar un usuario (update)
+ * PUT /usuarios/:id
+ * Acepta tanto ObjectId (_id) como usuario_id (número)
+ */
+exports.update = async (req, res) => {
+    try {
+        let usuario;
+        
+        // Intentar buscar por ObjectId primero
+        if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+            usuario = await Usuario.findById(req.params.id);
+        }
+        
+        // Si no se encontró por ObjectId, intentar por usuario_id
+        if (!usuario) {
+            const usuarioIdNum = parseInt(req.params.id);
+            if (!isNaN(usuarioIdNum)) {
+                usuario = await Usuario.findOne({ usuario_id: usuarioIdNum });
+            }
+        }
+        
+        // Validar que el usuario exista
+        if (!usuario) {
+            return JsonResponse.notFound(res, 'Usuario no encontrado');
+        }
+
+        const {
+            username,
+            password,
+            nombre,
+            apellido_paterno,
+            apellido_materno,
+            numero_casa,
+            email,
+            telefono,
+            documentos,
+            perfil_detalle
+        } = req.body;
+
+        // Verificar si el username o email ya están en uso por otro usuario
+        if (username || email) {
+            const query = {
+                $or: [
+                    ...(username ? [{ username }] : []),
+                    ...(email ? [{ email }] : [])
+                ]
+            };
+            
+            // Excluir el usuario actual (por _id o usuario_id)
+            if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+                query._id = { $ne: req.params.id };
+            } else {
+                const usuarioIdNum = parseInt(req.params.id);
+                if (!isNaN(usuarioIdNum)) {
+                    query.usuario_id = { $ne: usuarioIdNum };
+                }
+            }
+            
+            const usuarioExistente = await Usuario.findOne(query);
+
+            if (usuarioExistente) {
+                return JsonResponse.error(res, 'El username o email ya está en uso', 400);
+            }
+        }
+
+        // Manejar archivos subidos
+        let documentosData = usuario.documentos || {};
+        if (documentos) {
+            try {
+                documentosData = { ...documentosData, ...JSON.parse(documentos) };
+            } catch {
+                documentosData = { ...documentosData, ...documentos };
+            }
+        }
+        if (req.files) {
+            if (req.files.imagen_perfil && req.files.imagen_perfil[0]) {
+                documentosData.imagen_perfil_url = `usuarios/${req.files.imagen_perfil[0].filename}`;
+            }
+            if (req.files.imagen_ine && req.files.imagen_ine[0]) {
+                documentosData.imagen_ine_url = `usuarios/${req.files.imagen_ine[0].filename}`;
+            }
+        }
+
+        // Actualizar campos
+        if (username) usuario.username = username;
+        if (password) usuario.password = password; // Se hasheará automáticamente
+        if (nombre) usuario.nombre = nombre;
+        if (apellido_paterno) usuario.apellido_paterno = apellido_paterno;
+        if (apellido_materno) usuario.apellido_materno = apellido_materno;
+        if (numero_casa !== undefined) usuario.numero_casa = numero_casa;
+        if (email) usuario.email = email;
+        if (telefono) usuario.telefono = telefono;
+        if (documentosData) usuario.documentos = documentosData;
+        if (perfil_detalle) {
+            try {
+                usuario.perfil_detalle = { ...usuario.perfil_detalle, ...JSON.parse(perfil_detalle) };
+            } catch {
+                usuario.perfil_detalle = { ...usuario.perfil_detalle, ...perfil_detalle };
+            }
+        }
+
+        await usuario.save();
+
+        const usuarioObj = usuario.toObject();
+
+        // Construir URLs públicas para imágenes
+        if (usuarioObj.documentos?.imagen_perfil_url) {
+            usuarioObj.documentos.imagen_perfil_url = buildImageUrl(req, usuarioObj.documentos.imagen_perfil_url);
+        }
+        if (usuarioObj.documentos?.imagen_ine_url) {
+            usuarioObj.documentos.imagen_ine_url = buildImageUrl(req, usuarioObj.documentos.imagen_ine_url);
+        }
+
+        // Opción para cifrar la respuesta
+        if (req.query.encrypt === 'true') {
+            const responseData = {
+                estado: 'exito',
+                mensaje: 'Usuario actualizado exitosamente',
+                data: usuarioObj
+            };
+            const encryptedResponse = Encryption.encryptResponse(responseData);
+            return res.json(encryptedResponse);
+        }
+
+        return JsonResponse.success(res, usuarioObj, 'Usuario actualizado exitosamente');
+    } catch (error) {
+        console.error('Error en update usuario:', error);
+        if (error.code === 11000) {
+            return JsonResponse.error(res, 'El username o email ya está en uso', 400);
+        }
+        return JsonResponse.error(res, 'Error al actualizar usuario', 500);
+    }
+};
+
+/**
+ * Eliminar un usuario (destroy)
+ * DELETE /usuarios/:id
+ * Acepta tanto ObjectId (_id) como usuario_id (número)
+ */
+exports.destroy = async (req, res) => {
+    try {
+        let usuario;
+        
+        // Intentar buscar por ObjectId primero
+        if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+            usuario = await Usuario.findById(req.params.id);
+            if (usuario) {
+                await Usuario.findByIdAndDelete(req.params.id);
+            }
+        }
+        
+        // Si no se encontró por ObjectId, intentar por usuario_id
+        if (!usuario) {
+            const usuarioIdNum = parseInt(req.params.id);
+            if (!isNaN(usuarioIdNum)) {
+                usuario = await Usuario.findOne({ usuario_id: usuarioIdNum });
+                if (usuario) {
+                    await Usuario.findByIdAndDelete(usuario._id);
+                }
+            }
+        }
+        
+        // Validar que el usuario exista
+        if (!usuario) {
+            return JsonResponse.notFound(res, 'Usuario no encontrado');
+        }
+
+        return JsonResponse.success(res, null, 'Usuario eliminado exitosamente');
+    } catch (error) {
+        console.error('Error en destroy usuario:', error);
+        return JsonResponse.error(res, 'Error al eliminar usuario', 500);
+    }
+};
+
+/**
+ * Login de usuario
+ * POST /usuarios/login
+ */
+exports.login = async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        // Buscar usuario por username
+        const usuario = await Usuario.findOne({ username }).select('+password');
+        
+        if (!usuario) {
+            return JsonResponse.error(res, 'Credenciales incorrectas', 401);
+        }
+
+        // Verificar password
+        const passwordValido = await usuario.comparePassword(password);
+        if (!passwordValido) {
+            return JsonResponse.error(res, 'Credenciales incorrectas', 401);
+        }
+
+        // Crear token JWT
         const payload = {
             usuario: {
-                id: usuario.id,
+                id: usuario._id.toString(),
+                usuario_id: usuario.usuario_id,
+                username: usuario.username,
                 rol: usuario.rol,
-                condominioId: usuario.condominioId
+                condominio_id: usuario.condominio_id
             }
         };
 
-        jwt.sign(
+        const token = jwt.sign(
             payload,
-            process.env.JWT_SECRET, // Tu llave secreta en .env
-            { expiresIn: '8h' }, // Duración del token
-            (error, token) => {
-                if (error) throw error;
-                res.json({ token });
-            }
+            process.env.JWT_SECRET || 'secret-key-change-in-production',
+            { expiresIn: '8h' }
         );
 
+        return JsonResponse.success(res, { token }, 'Login exitoso');
     } catch (error) {
-        console.error(error);
-        res.status(500).send('Error en el servidor');
+        console.error('Error en login:', error);
+        return JsonResponse.error(res, 'Error al iniciar sesión', 500);
     }
 };
 
-// Obtener todos los usuarios DE MI CONDOMINIO
-exports.obtenerUsuariosPorCondominio = async (req, res) => {
-    try {
-        // Obtenemos el condominioId del usuario autenticado (que viene en el JWT)
-        // Esto asume que tienes un middleware de autenticación que pone 'req.usuario'
-        const { condominioId, rol, id } = req.usuario; 
-
-        let query = { condominioId: condominioId };
-
-        // AÑADIDO: Si el rol es 'dueño', solo debe ver a sus habitantes/arrendatarios
-        if (rol === 'dueño') {
-            // Busca a los que él creó O a él mismo
-            query = { 
-                ...query,
-                $or: [ { dueñoId: id }, { _id: id } ] 
-            };
-        }
-        // Si es 'admin' o 'guardia', ve a todos (la query base es suficiente)
-        // Si es 'habitante' o 'arrendatario', solo se verá a sí mismo (habría que ajustar)
-
-        const usuarios = await Usuario.find(query);
-        res.json(usuarios);
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Error en el servidor');
-    }
-};
-
-// Obtener un usuario por su ID
-exports.obtenerUsuarioPorId = async (req, res) => {
-    try {
-        const usuario = await Usuario.findById(req.params.id);
-
-        if (!usuario) {
-            return res.status(404).json({ msg: 'Usuario no encontrado' });
-        }
-
-        // --- Lógica de autorización ---
-        // Un usuario solo puede ver a otros dentro de su mismo condominio.
-        if (usuario.condominioId.toString() !== req.usuario.condominioId) {
-            return res.status(403).json({ msg: 'Acceso no autorizado' });
-        }
-
-        res.json(usuario);
-
-    } catch (error) {
-        console.error(error);
-        if (error.kind === 'ObjectId') {
-            return res.status(404).json({ msg: 'Usuario no encontrado (ID inválido)' });
-        }
-        res.status(500).send('Error en el servidor');
-    }
-};
-
-// Actualizar un usuario
-exports.actualizarUsuario = async (req, res) => {
-    // Extraemos los campos que se pueden actualizar.
-    // No permitimos cambiar rol, condominioId o dueñoId desde este endpoint.
-    const { nombre, email, telefono } = req.body;
-    const datosActualizados = { nombre, email, telefono };
-
-    // Filtramos campos undefined para no sobreescribir con nada
-    Object.keys(datosActualizados).forEach(key => datosActualizados[key] === undefined && delete datosActualizados[key]);
-
-    try {
-        let usuario = await Usuario.findById(req.params.id);
-
-        if (!usuario) {
-            return res.status(404).json({ msg: 'Usuario no encontrado' });
-        }
-
-        // --- Lógica de autorización ---
-        // Solo un admin o el propio usuario pueden modificar sus datos.
-        if (req.usuario.rol !== 'admin' && req.usuario.id !== usuario.id.toString()) {
-            return res.status(403).json({ msg: 'No tienes permiso para actualizar este usuario' });
-        }
-
-        // Si se intenta cambiar el email, verificar que no esté ya en uso por otro usuario
-        if (email && email !== usuario.email) {
-            const emailExistente = await Usuario.findOne({ email });
-            if (emailExistente) {
-                return res.status(400).json({ msg: 'El email ya está en uso por otra cuenta' });
-            }
-        }
-
-        usuario = await Usuario.findByIdAndUpdate(
-            req.params.id,
-            { $set: datosActualizados },
-            { new: true } // Devuelve el documento actualizado
-        );
-
-        res.json({ msg: 'Usuario actualizado correctamente', usuario });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Error en el servidor');
-    }
-};
-
-// Desactivar un usuario (Soft Delete)
-exports.desactivarUsuario = async (req, res) => {
-    try {
-        const usuario = await Usuario.findById(req.params.id);
-
-        if (!usuario) {
-            return res.status(404).json({ msg: 'Usuario no encontrado' });
-        }
-
-        // Cambiamos el estado a inactivo
-        usuario.activo = false;
-        await usuario.save();
-
-        res.json({ msg: 'Usuario desactivado correctamente' });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Error en el servidor');
-    }
+/**
+ * Logout de usuario (invalidar token)
+ * POST /usuarios/logout
+ */
+exports.logout = async (req, res) => {
+    // En una implementación más completa, podrías guardar tokens invalidados en Redis
+    // Por ahora, solo confirmamos el logout
+    return JsonResponse.success(res, null, 'Sesión cerrada exitosamente');
 };

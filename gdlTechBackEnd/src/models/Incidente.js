@@ -1,33 +1,56 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
+/**
+ * Modelo de Incidente según el esquema de la base de datos
+ */
 const IncidenteSchema = new Schema({
-    titulo: { type: String, required: true },
-    descripcion: { type: String, required: true },
-    // URL de la imagen (proveniente de S3 o tu servidor)
-    imageUrl: { type: String, required: false }, // Quizás quieras hacerla opcional
-
-    // Quién reporta el incidente
-    autorId: { 
-        type: Schema.Types.ObjectId, 
-        ref: 'Usuario', // Referencia al modelo 'Usuario'
+    incidente_id: { 
+        type: Number, 
+        required: true, 
+        unique: true 
+    },
+    condominio_id: { 
+        type: String, 
+        required: true, 
+        default: 'C500' 
+    },
+    asunto: { 
+        type: String, 
         required: true 
     },
-    // A qué condominio pertenece
-    condominioId: { 
-        type: Schema.Types.ObjectId, 
-        ref: 'Condominio', 
+    numeroCasa: { 
+        type: Number, 
         required: true 
     },
-    // Estado del incidente
+    fecha_reporte: { 
+        type: String, 
+        required: true 
+    },
+    fecha_ultima_actualizacion: { 
+        type: String, 
+        default: '' 
+    },
+    categoria: { 
+        type: String, 
+        required: true 
+    },
+    descripcion: { 
+        type: String, 
+        required: true 
+    },
     estado: { 
         type: String, 
-        default: 'abierto', 
-        enum: ['abierto', 'enProceso', 'resuelto'] 
+        enum: ['abierto', 'en_proceso', 'resuelto', 'cerrado', 'reportado'], 
+        default: 'reportado' 
+    },
+    usuario_id: { 
+        type: Number, 
+        required: true 
     }
 }, {
-    timestamps: false,
+    timestamps: true,
     versionKey: false
 });
 
-module.exports = mongoose.model('Incidente', IncidenteSchema);
+module.exports = mongoose.model('Incidente', IncidenteSchema, 'incidentes');

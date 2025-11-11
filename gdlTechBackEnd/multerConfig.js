@@ -42,7 +42,16 @@ const createUploader = (subfolder) => {
   };
 
   // 3. Devolvemos la instancia de Multer configurada
-  return multer({ storage, fileFilter });
+  // limits: permite controlar el tamaño de los archivos
+  const upload = multer({ 
+    storage, 
+    fileFilter,
+    limits: {
+      fileSize: 5 * 1024 * 1024 // 5MB máximo
+    }
+  });
+  
+  return upload;
 };
 
 module.exports = createUploader;

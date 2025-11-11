@@ -1,46 +1,132 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
+const bcrypt = require('bcryptjs');
 
+/**
+ * Modelo de Usuario según el esquema de la base de datos
+ * Basado en los documentos de ejemplo proporcionados
+ */
 const UsuarioSchema = new Schema({
-    nombre: { type: String, required: true },
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    password: { type: String, required: true },
-    // Rol del usuario dentro del condominio
+    usuario_id: { 
+        type: Number, 
+        required: true, 
+        unique: true 
+    },
+    condominio_id: { 
+        type: String, 
+        required: true, 
+        default: 'C500' 
+    },
+    username: { 
+        type: String, 
+        required: true, 
+        unique: true, 
+        trim: true 
+    },
+    password: { 
+        type: String, 
+        required: true 
+    },
     rol: { 
         type: String, 
         required: true, 
-        enum: ['admin', 'guardia', 'dueño', 'habitante', 'arrendatario'] 
+        enum: ['administrador', 'guardia', 'dueño', 'habitante', 'arrendatario'] 
     },
-    // El ID del condominio al que pertenece. ¡CRÍTICO!
-    condominioId: { 
-        type: Schema.Types.ObjectId, 
-        ref: 'Condominio', // Asumo que tendrás un modelo 'Condominio'
+    nombre: { 
+        type: String, 
         required: true 
     },
-    
-    // NUEVO CAMPO: Para vincular habitantes/arrendatarios a un dueño
-    dueñoId: {
-        type: Schema.Types.ObjectId,
-        ref: 'Usuario',
-        required: function() { 
-            // Requerido solo si el rol es habitante o arrendatario
-            return this.rol === 'habitante' || this.rol === 'arrendatario'; 
+    apellido_paterno: { 
+        type: String, 
+        required: true 
+    },
+    apellido_materno: { 
+        type: String, 
+        required: true 
+    },
+    email: { 
+        type: String, 
+        required: true, 
+        unique: true, 
+        lowercase: true, 
+        trim: true 
+    },
+    telefono: { 
+        type: String, 
+        required: true 
+    },
+    numero_casa: { 
+        type: String, 
+        default: '' 
+    },
+    documentos: {
+        imagen_perfil_url: { 
+            type: String, 
+            default: '' 
+        },
+        imagen_ine_url: { 
+            type: String, 
+            default: '' 
         }
     },
-
-    // Otros datos
-    telefono: { type: String },
-    // Para saber si el usuario ha sido verificado/aprobado por el admin
-    activo: { type: Boolean, default: false }
+    perfil_detalle: {
+        rfc: { 
+            type: String, 
+            default: '' 
+        },
+        nss: { 
+            type: String, 
+            default: '' 
+        },
+        numero_casa: { 
+            type: String, 
+            default: '' 
+        },
+        auto: {
+            modelo: { 
+                type: String, 
+                default: '' 
+            },
+            color: { 
+                type: String, 
+                default: '' 
+            },
+            placas: { 
+                type: String, 
+                default: '' 
+            }
+        }
+    }
 }, {
     timestamps: true, // Crea createdAt y updatedAt
     versionKey: false
 });
 
-// Middleware para que 'find' no regrese el password
-UsuarioSchema.methods.toJSON = function() {
-    const { __v, password, ...usuario } = this.toObject();
-    return usuario;
-}
+// Middleware pre-save para hashear password antes de guardar
+UsuarioSchema.pre('save', async function(next) {
+    // Solo hashear si el password fue modificado
+    if (!this.isModified('password')) {
+        return next();
+    }
+    
+    try {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+        next();
+    } catch (error) {
+        next(error);
+    }
+});
 
-module.exports = mongoose.model('Usuario', UsuarioSchema);
+// Método para comparar passwords
+UsuarioSchema.methods.comparePassword = async function(candidatePassword) {
+    return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Middleware para que 'toJSON' no regrese el password
+UsuarioSchema.methods.toJSON = function() {
+    const { password, __v, ...usuario } = this.toObject();
+    return usuario;
+};
+
+module.exports = mongoose.model('Usuario', UsuarioSchema, 'usuarios');

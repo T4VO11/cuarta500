@@ -1,49 +1,81 @@
 const express = require('express');
 const router = express.Router();
-const usuarioController = require('../app/controllers/usuariosController'); // RUTA CORREGIDA
-const { validarCrearUsuario, validarLogin } = require('../middleware/usuarioValidator'); // RUTA CORREGIDA
-const authMiddleware = require('../middleware/auth.middleware'); // Tu middleware de JWT (Asumo que está en src/middleware/)
+const usuariosController = require('../app/controllers/usuariosController');
+const { validarCrearUsuario, validarLogin, validarActualizarUsuario } = require('../middleware/usuarioValidator');
+const authMiddleware = require('../middleware/auth.middleware');
+const { requireAdmin } = require('../middleware/role.middleware');
+const createUploader = require('../../multerConfig');
+
+const upload = createUploader('usuarios');
 
 // --- Rutas Públicas (Registro y Login) ---
+// POST /usuarios/registrar - Registro de nuevo usuario (NO devuelve token)
+// Nota: Los archivos son opcionales - multer solo se aplica si es multipart/form-data
+console.log('Registrando ruta POST /usuarios/registrar');
 
-// POST /api/usuarios/registrar
-// (Registro de un nuevo usuario)
-// NOTA: Si solo 'dueños' o 'admins' pueden crear usuarios, esta ruta debería tener 'authMiddleware'
-router.post('/registrar', validarCrearUsuario, usuarioController.crearUsuario);
+// Middleware opcional para multer
+const multerOptional = (req, res, next) => {
+    const contentType = req.headers['content-type'] || '';
+    if (contentType.includes('multipart/form-data')) {
+        upload.fields([
+            { name: 'imagen_perfil', maxCount: 1 },
+            { name: 'imagen_ine', maxCount: 1 }
+        ])(req, res, (err) => {
+            if (err && (err.code === 'LIMIT_UNEXPECTED_FILE' || err.code === 'LIMIT_FILE_COUNT')) {
+                return next();
+            }
+            if (err) return next(err);
+            next();
+        });
+    } else {
+        next();
+    }
+};
 
-// POST /api/usuarios/login
-// (Login para obtener token)
-router.post('/login', validarLogin, usuarioController.loginUsuario);
+router.post('/registrar', multerOptional, validarCrearUsuario, usuariosController.store);
 
+// POST /usuarios/login - Login para obtener token
+router.post('/login', validarLogin, usuariosController.login);
 
-// --- Rutas Privadas (Requieren Token) ---
-// De aquí en adelante, todas las rutas deben pasar por el middleware de autenticación
+// POST /usuarios/logout - Logout (invalidar sesión)
+router.post('/logout', authMiddleware, requireAdmin, usuariosController.logout);
 
-// GET /api/usuarios
-// (Obtiene todos los usuarios DEL CONDOMINIO del usuario logueado)
-router.get('/', authMiddleware, usuarioController.obtenerUsuariosPorCondominio);
+// --- Rutas Privadas (Requieren Token de Administrador) ---
+// GET /usuarios - Obtener todos los usuarios
+router.get('/', authMiddleware, requireAdmin, usuariosController.index);
 
-// GET /api/usuarios/:id
-// (Obtiene un usuario específico por su ID)
-router.get('/:id', authMiddleware, usuarioController.obtenerUsuarioPorId);
+// GET /usuarios/:id - Obtener un usuario por ID
+router.get('/:id', authMiddleware, requireAdmin, usuariosController.show);
 
-// PUT /api/usuarios/:id
-// (Actualiza los datos de un usuario. Solo admin o el propio usuario)
-router.put('/:id', authMiddleware, usuarioController.actualizarUsuario);
-
-// DELETE /api/usuarios/:id
-// (Desactiva un usuario - Soft Delete. Asumimos que solo un admin puede hacerlo)
-router.delete('/:id', authMiddleware, usuarioController.desactivarUsuario);
-
-// Ruta para que un dueño cree un habitante/arrendatario
-// (Es la misma ruta 'registrar' pero ahora protegida por auth)
-router.post(
-    '/crear-habitante', // Un endpoint más específico
-    authMiddleware, // Requiere token
-    // authRoles('dueño'), // Requeriría un middleware de roles que verifique req.usuario.rol
-    validarCrearUsuario, 
-    usuarioController.crearUsuario
+// PUT /usuarios/:id - Actualizar un usuario
+router.put('/:id', 
+    authMiddleware,
+    requireAdmin,
+    (req, res, next) => {
+        // Si no hay Content-Type multipart/form-data, saltamos multer
+        const contentType = req.headers['content-type'] || '';
+        if (!contentType.includes('multipart/form-data')) {
+            return next();
+        }
+        upload.fields([
+            { name: 'imagen_perfil', maxCount: 1 },
+            { name: 'imagen_ine', maxCount: 1 }
+        ])(req, res, (err) => {
+            // Ignoramos errores de multer relacionados con archivos faltantes
+            if (err && (err.code === 'LIMIT_UNEXPECTED_FILE' || err.code === 'LIMIT_FILE_COUNT')) {
+                return next();
+            }
+            if (err) {
+                return next(err);
+            }
+            next();
+        });
+    },
+    validarActualizarUsuario, 
+    usuariosController.update
 );
 
+// DELETE /usuarios/:id - Eliminar un usuario
+router.delete('/:id', authMiddleware, requireAdmin, usuariosController.destroy);
 
 module.exports = router;

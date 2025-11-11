@@ -11,16 +11,18 @@ module.exports = function(req, res, next) {
     // 1. Obtener el token de la cabecera
     const authHeader = req.header('Authorization');
 
+    const JsonResponse = require('../utils/JsonResponse');
+
     // 2. Revisar si no hay un token
     if (!authHeader) {
-        return res.status(401).json({ msg: 'No hay token, permiso no válido' });
+        return JsonResponse.unauthorized(res, 'No hay token, permiso no válido');
     }
 
     // 3. Validar el formato del token (debe ser "Bearer <token>")
     const tokenParts = authHeader.split(' ');
     
     if (tokenParts.length !== 2 || tokenParts[0] !== 'Bearer') {
-         return res.status(401).json({ msg: 'Formato de token no válido' });
+         return JsonResponse.unauthorized(res, 'Formato de token no válido');
     }
 
     const token = tokenParts[1];
@@ -29,7 +31,7 @@ module.exports = function(req, res, next) {
     try {
         // jwt.verify() revisa si el token es válido y no ha expirado
         // usando la misma llave secreta que usamos para firmarlo.
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret-key-change-in-production');
         
         // Si es válido, 'decoded' contiene el payload (ej. { usuario: { id: '...', rol: '...' } })
         // Adjuntamos el payload del usuario al objeto request
@@ -41,6 +43,6 @@ module.exports = function(req, res, next) {
     } catch (error) {
         // Si el token no es válido (firma incorrecta, expirado, etc.)
         console.error('Error al verificar token:', error.message);
-        res.status(401).json({ msg: 'Token no válido' });
+        return JsonResponse.unauthorized(res, 'Token no válido o expirado');
     }
 };

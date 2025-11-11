@@ -1,36 +1,32 @@
-const { check, body } = require('express-validator');
-const mongoose = require('mongoose'); // Necesario para validar el 'dueñoId'
-const { validarResultados } = require('./resultadosValidator'); // RUTA CORREGIDA
+const { check } = require('express-validator');
+const { validarResultados } = require('./resultadosValidator');
 
 exports.validarCrearUsuario = [
-    check('nombre', 'El nombre es obligatorio').not().isEmpty(),
-    check('email', 'El email no es válido o está vacío').isEmail(),
+    check('usuario_id', 'El usuario_id es obligatorio y debe ser un número').isInt(),
+    check('username', 'El username es obligatorio').not().isEmpty().trim(),
     check('password', 'El password debe tener al menos 6 caracteres').isLength({ min: 6 }),
-    check('rol', 'El rol es obligatorio').isIn(['admin', 'guardia', 'dueño', 'habitante', 'arrendatario']),
-    check('condominioId', 'El ID del condominio es obligatorio').isMongoId(),
-
-    // NUEVA VALIDACIÓN: Condicional para dueñoId
-    body('dueñoId').custom((value, { req }) => {
-        const { rol } = req.body;
-        if ( (rol === 'habitante' || rol === 'arrendatario') && !value ) {
-            // Si el rol es habitante/arrendatario, pero el creador NO es un 'dueño'
-            // (ej. un admin crea un habitante), el dueñoId debe venir en el body.
-            // Si el creador SÍ es un 'dueño', el controlador forzará el ID.
-            if (!req.usuario || req.usuario.rol !== 'dueño') {
-                 throw new Error('El dueñoId es obligatorio para habitantes o arrendatarios');
-            }
-        }
-        if (value && !mongoose.Types.ObjectId.isValid(value)) {
-             throw new Error('El dueñoId debe ser un ID de Mongo válido');
-        }
-        return true;
-    }),
-
-    validarResultados // Nuestro middleware que revisa los errores
+    check('rol', 'El rol es obligatorio').isIn(['administrador', 'guardia', 'dueño', 'habitante', 'arrendatario']),
+    check('nombre', 'El nombre es obligatorio').not().isEmpty().trim(),
+    check('apellido_paterno', 'El apellido paterno es obligatorio').not().isEmpty().trim(),
+    check('apellido_materno', 'El apellido materno es obligatorio').not().isEmpty().trim(),
+    check('email', 'El email debe ser válido').isEmail().normalizeEmail(),
+    check('telefono', 'El teléfono es obligatorio').not().isEmpty().trim(),
+    validarResultados
 ];
 
 exports.validarLogin = [
-    check('email', 'El email es obligatorio').isEmail(),
+    check('username', 'El username es obligatorio').not().isEmpty().trim(),
     check('password', 'El password es obligatorio').not().isEmpty(),
+    validarResultados
+];
+
+exports.validarActualizarUsuario = [
+    check('username', 'El username debe ser válido').optional().not().isEmpty().trim(),
+    check('password', 'El password debe tener al menos 6 caracteres').optional().isLength({ min: 6 }),
+    check('nombre', 'El nombre debe ser válido').optional().not().isEmpty().trim(),
+    check('apellido_paterno', 'El apellido paterno debe ser válido').optional().not().isEmpty().trim(),
+    check('apellido_materno', 'El apellido materno debe ser válido').optional().not().isEmpty().trim(),
+    check('email', 'El email debe ser válido').optional().isEmail().normalizeEmail(),
+    check('telefono', 'El teléfono debe ser válido').optional().not().isEmpty().trim(),
     validarResultados
 ];
