@@ -12,5 +12,8 @@ router.post('/', authMiddleware, requireAdmin, validarInvitarAmigo, invitarAmigo
 router.put('/:id', authMiddleware, requireAdmin, validarInvitarAmigo, invitarAmigosController.update);
 router.delete('/:id', authMiddleware, requireAdmin, invitarAmigosController.destroy);
 
+// Ruta alternativa para usuarios autenticados (sin requerir admin) - para crear invitaciones
+router.post('/crear', authMiddleware, validarInvitarAmigo, invitarAmigosController.store);
+
 module.exports = router;
 

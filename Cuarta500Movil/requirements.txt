@@ -1,0 +1,9 @@
+flet
+flet-map
+flet-geolocator
+requests
+qrcode[pil]
+Pillow
+
+
+
