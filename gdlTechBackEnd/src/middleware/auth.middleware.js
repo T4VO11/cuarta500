@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const tokenBlacklist = require('../utils/tokenBlacklist');
 
 /**
  * Middleware de autenticación.
@@ -27,7 +28,13 @@ module.exports = function(req, res, next) {
 
     const token = tokenParts[1];
 
-    // 4. Verificar el token
+    // 4. Verificar si el token está en la blacklist (fue invalidado)
+    if (tokenBlacklist.has(token)) {
+        console.log('Intento de usar token invalidado');
+        return JsonResponse.unauthorized(res, 'Token invalidado. La sesión ha sido cerrada');
+    }
+
+    // 5. Verificar el token
     try {
         // jwt.verify() revisa si el token es válido y no ha expirado
         // usando la misma llave secreta que usamos para firmarlo.

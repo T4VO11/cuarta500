@@ -4,6 +4,7 @@ const JsonResponse = require('../../utils/JsonResponse');
 const Encryption = require('../../utils/encryption');
 const mongoose = require('mongoose');
 const { buildImageUrl } = require('../../utils/imageUrlHelper');
+const tokenBlacklist = require('../../utils/tokenBlacklist');
 
 /**
  * Obtener todos los usuarios (index)
@@ -415,7 +416,44 @@ exports.login = async (req, res) => {
  * POST /usuarios/logout
  */
 exports.logout = async (req, res) => {
-    // En una implementación más completa, podrías guardar tokens invalidados en Redis
-    // Por ahora, solo confirmamos el logout
-    return JsonResponse.success(res, null, 'Sesión cerrada exitosamente');
+    try {
+        // Obtener el token del header Authorization
+        const authHeader = req.header('Authorization');
+        
+        if (!authHeader) {
+            return JsonResponse.error(res, 'No se proporcionó token de autenticación', 401);
+        }
+
+        // Validar el formato del token (debe ser "Bearer <token>")
+        const tokenParts = authHeader.split(' ');
+        
+        if (tokenParts.length !== 2 || tokenParts[0] !== 'Bearer') {
+            return JsonResponse.error(res, 'Formato de token no válido', 400);
+        }
+
+        const token = tokenParts[1];
+
+        // Verificar que el token sea válido antes de invalidarlo
+        try {
+            jwt.verify(token, process.env.JWT_SECRET || 'secret-key-change-in-production');
+        } catch (error) {
+            // Si el token ya es inválido o expiró, aún así podemos confirmar el logout
+            // pero no lo agregamos a la blacklist ya que no es necesario
+            console.log('Token inválido o expirado en logout:', error.message);
+            return JsonResponse.success(res, null, 'Sesión cerrada exitosamente (token ya no válido)');
+        }
+
+        // Agregar el token a la blacklist para invalidarlo
+        const added = tokenBlacklist.add(token);
+        
+        if (!added) {
+            console.error('Error al agregar token a blacklist');
+            return JsonResponse.error(res, 'Error al cerrar sesión', 500);
+        }
+
+        return JsonResponse.success(res, null, 'Sesión cerrada exitosamente');
+    } catch (error) {
+        console.error('Error en logout:', error);
+        return JsonResponse.error(res, 'Error al cerrar sesión', 500);
+    }
 };

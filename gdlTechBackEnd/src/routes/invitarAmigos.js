@@ -5,7 +5,7 @@ const { validarInvitarAmigo } = require('../middleware/invitarAmigoValidator');
 const authMiddleware = require('../middleware/auth.middleware');
 const { requireAdmin } = require('../middleware/role.middleware');
 
-// Rutas protegidas con autenticación de administrador
+// Rutas protegidas con autenticaciOn de administrador
 router.get('/', authMiddleware, requireAdmin, invitarAmigosController.index);
 router.get('/:id', authMiddleware, requireAdmin, invitarAmigosController.show);
 router.post('/', authMiddleware, requireAdmin, validarInvitarAmigo, invitarAmigosController.store);
@@ -16,4 +16,3 @@ router.delete('/:id', authMiddleware, requireAdmin, invitarAmigosController.dest
 router.post('/crear', authMiddleware, validarInvitarAmigo, invitarAmigosController.store);
 
 module.exports = router;
-
