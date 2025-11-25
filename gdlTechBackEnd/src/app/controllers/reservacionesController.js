@@ -27,12 +27,27 @@ exports.index = async (req, res) => {
 
 exports.show = async (req, res) => {
     try {
-        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-            return JsonResponse.error(res, 'ID inválido', 400);
+        // Si el ID está vacío o es undefined, devolver error más descriptivo
+        if (!req.params.id || req.params.id === 'undefined' || req.params.id === 'null') {
+            return JsonResponse.error(res, 'ID no proporcionado', 400);
         }
 
-        const reservacion = await Reservacion.findById(req.params.id);
+        let reservacion;
+        
+        // Intentar buscar por ObjectId primero
+        if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+            reservacion = await Reservacion.findById(req.params.id);
+        }
+        
+        // Si no se encontró por ObjectId, intentar por reservacion_id
+        if (!reservacion) {
+            const reservacionIdNum = parseInt(req.params.id);
+            if (!isNaN(reservacionIdNum)) {
+                reservacion = await Reservacion.findOne({ reservacion_id: reservacionIdNum });
+            }
+        }
 
+        // Validar que la reservación exista
         if (!reservacion) {
             return JsonResponse.notFound(res, 'Reservación no encontrada');
         }
@@ -97,11 +112,22 @@ exports.store = async (req, res) => {
 
 exports.update = async (req, res) => {
     try {
-        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-            return JsonResponse.error(res, 'ID inválido', 400);
+        let reservacion;
+        
+        // Intentar buscar por ObjectId primero
+        if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+            reservacion = await Reservacion.findById(req.params.id);
         }
-
-        const reservacion = await Reservacion.findById(req.params.id);
+        
+        // Si no se encontró por ObjectId, intentar por reservacion_id
+        if (!reservacion) {
+            const reservacionIdNum = parseInt(req.params.id);
+            if (!isNaN(reservacionIdNum)) {
+                reservacion = await Reservacion.findOne({ reservacion_id: reservacionIdNum });
+            }
+        }
+        
+        // Validar que la reservación exista
         if (!reservacion) {
             return JsonResponse.notFound(res, 'Reservación no encontrada');
         }
@@ -152,21 +178,59 @@ exports.update = async (req, res) => {
 
 exports.destroy = async (req, res) => {
     try {
-        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-            return JsonResponse.error(res, 'ID inválido', 400);
+        let reservacion;
+        
+        // Intentar buscar por ObjectId primero
+        if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+            reservacion = await Reservacion.findById(req.params.id);
+            if (reservacion) {
+                await Reservacion.findByIdAndDelete(req.params.id);
+            }
         }
-
-        const reservacion = await Reservacion.findById(req.params.id);
+        
+        // Si no se encontró por ObjectId, intentar por reservacion_id
+        if (!reservacion) {
+            const reservacionIdNum = parseInt(req.params.id);
+            if (!isNaN(reservacionIdNum)) {
+                reservacion = await Reservacion.findOne({ reservacion_id: reservacionIdNum });
+                if (reservacion) {
+                    await Reservacion.findByIdAndDelete(reservacion._id);
+                }
+            }
+        }
+        
+        // Validar que la reservación exista
         if (!reservacion) {
             return JsonResponse.notFound(res, 'Reservación no encontrada');
         }
-
-        await Reservacion.findByIdAndDelete(req.params.id);
 
         return JsonResponse.success(res, null, 'Reservación eliminada exitosamente');
     } catch (error) {
         console.error('Error en destroy reservacion:', error);
         return JsonResponse.error(res, 'Error al eliminar reservación', 500);
+    }
+};
+
+// Endpoint para usuarios normales: obtener todas las reservaciones (solo lectura)
+exports.misReservaciones = async (req, res) => {
+    try {
+        const reservaciones = await Reservacion.find()
+            .sort({ reservacion_id: -1 });
+
+        if (req.query.encrypt === 'true') {
+            const responseData = {
+                estado: 'exito',
+                mensaje: 'Reservaciones obtenidas exitosamente',
+                data: reservaciones
+            };
+            const encryptedResponse = Encryption.encryptResponse(responseData);
+            return res.json(encryptedResponse);
+        }
+
+        return JsonResponse.success(res, reservaciones, 'Reservaciones obtenidas exitosamente');
+    } catch (error) {
+        console.error('Error en misReservaciones:', error);
+        return JsonResponse.error(res, 'Error al obtener reservaciones', 500);
     }
 };
 

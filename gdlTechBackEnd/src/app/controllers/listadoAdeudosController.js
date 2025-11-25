@@ -5,7 +5,16 @@ const mongoose = require('mongoose');
 
 exports.index = async (req, res) => {
     try {
-        const adeudos = await ListadoAdeudo.find({ condominio_id: 'C500' })
+        // Si el usuario no es administrador, solo mostrar sus propios adeudos
+        const usuario_id = req.usuario?.usuario_id;
+        const esAdmin = req.usuario?.rol === 'administrador';
+        
+        let query = { condominio_id: 'C500' };
+        if (!esAdmin && usuario_id) {
+            query.usuario_id = usuario_id;
+        }
+
+        const adeudos = await ListadoAdeudo.find(query)
             .sort({ transaccion_id: -1 });
 
         if (req.query.encrypt === 'true') {
@@ -190,6 +199,40 @@ exports.destroy = async (req, res) => {
     } catch (error) {
         console.error('Error en destroy listadoAdeudo:', error);
         return JsonResponse.error(res, 'Error al eliminar adeudo', 500);
+    }
+};
+
+// Endpoint para usuarios normales: obtener adeudos del usuario autenticado
+exports.misAdeudos = async (req, res) => {
+    try {
+        // Obtener usuario_id del token
+        const usuario_id = req.usuario?.usuario_id;
+        
+        if (!usuario_id) {
+            return JsonResponse.error(res, 'Usuario no autenticado', 401);
+        }
+
+        // Buscar adeudos del usuario
+        const adeudos = await ListadoAdeudo.find({ 
+            condominio_id: 'C500',
+            usuario_id: usuario_id
+        })
+        .sort({ transaccion_id: -1 });
+
+        if (req.query.encrypt === 'true') {
+            const responseData = {
+                estado: 'exito',
+                mensaje: 'Adeudos obtenidos exitosamente',
+                data: adeudos
+            };
+            const encryptedResponse = Encryption.encryptResponse(responseData);
+            return res.json(encryptedResponse);
+        }
+
+        return JsonResponse.success(res, adeudos, 'Adeudos obtenidos exitosamente');
+    } catch (error) {
+        console.error('Error en misAdeudos:', error);
+        return JsonResponse.error(res, 'Error al obtener adeudos', 500);
     }
 };
 

@@ -264,6 +264,63 @@ class ApiClient:
             return True, response.get('mensaje')
         
         return False, response.get('mensaje', 'Error al eliminar invitación')
+    
+    # ========== ADEUDOS/PAGOS ==========
+    def obtener_mis_adeudos(self, encrypt=False):
+        """Obtener adeudos del usuario actual - GET /listadoAdeudos/mis-adeudos"""
+        params = {'encrypt': 'true'} if encrypt else None
+        response, status_code = self._make_request('GET', '/listadoAdeudos/mis-adeudos', params=params)
+        
+        if status_code == 200 and response.get('estado') == 'exito':
+            return True, response.get('data', []), response.get('mensaje')
+        
+        return False, [], response.get('mensaje', 'Error al obtener adeudos')
+    
+    # ========== AMENIDADES ==========
+    def obtener_amenidades_disponibles(self, encrypt=False):
+        """Obtener amenidades disponibles - GET /amenidades/disponibles"""
+        params = {'encrypt': 'true'} if encrypt else None
+        response, status_code = self._make_request('GET', '/amenidades/disponibles', params=params)
+        
+        if status_code == 200 and response.get('estado') == 'exito':
+            return True, response.get('data', []), response.get('mensaje')
+        
+        return False, [], response.get('mensaje', 'Error al obtener amenidades disponibles')
+    
+    def obtener_amenidad(self, amenidad_id, encrypt=False):
+        """Obtener una amenidad por ID - GET /amenidades/:id"""
+        params = {'encrypt': 'true'} if encrypt else None
+        response, status_code = self._make_request('GET', f'/amenidades/{amenidad_id}', params=params)
+        
+        if status_code == 200 and response.get('estado') == 'exito':
+            return True, response.get('data'), response.get('mensaje')
+        
+        return False, None, response.get('mensaje', 'Amenidad no encontrada')
+    
+    # ========== RESERVACIONES ==========
+    def obtener_mis_reservas(self, encrypt=False):
+        """Obtener reservas del usuario actual - GET /reservaciones/mis-reservas"""
+        params = {'encrypt': 'true'} if encrypt else None
+        response, status_code = self._make_request('GET', '/reservaciones/mis-reservas', params=params)
+        
+        if status_code == 200 and response.get('estado') == 'exito':
+            return True, response.get('data', []), response.get('mensaje')
+        
+        return False, [], response.get('mensaje', 'Error al obtener reservas')
+    
+    def crear_reservacion(self, reservacion_data):
+        """Crear reservación - POST /reservaciones/crear (para usuarios normales)"""
+        # Intentar primero con la ruta para usuarios normales
+        response, status_code = self._make_request('POST', '/reservaciones/crear', data=reservacion_data)
+        
+        # Si falla, intentar con la ruta de admin (por compatibilidad)
+        if status_code not in [200, 201]:
+            response, status_code = self._make_request('POST', '/reservaciones', data=reservacion_data)
+        
+        if status_code in [200, 201] and response.get('estado') == 'exito':
+            return True, response.get('data'), response.get('mensaje')
+        
+        return False, None, response.get('mensaje', 'Error al crear reservación')
 
 
 

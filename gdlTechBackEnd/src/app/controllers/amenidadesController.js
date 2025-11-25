@@ -259,3 +259,39 @@ exports.destroy = async (req, res) => {
     }
 };
 
+// Endpoint para usuarios normales: obtener amenidades disponibles
+exports.disponibles = async (req, res) => {
+    try {
+        // Obtener todas las amenidades del condominio (sin filtrar por estado)
+        // El frontend puede decidir qué mostrar
+        const amenidades = await Amenidad.find({ 
+            condominio_id: 'C500'
+        })
+        .sort({ amenidad_id: 1 });
+
+        // Construir URLs públicas para imágenes de galería
+        const amenidadesConUrls = amenidades.map(amenidad => {
+            const amenidadObj = amenidad.toObject();
+            if (amenidadObj.reglas_apartado?.galeria_urls) {
+                amenidadObj.reglas_apartado.galeria_urls = buildImageUrls(req, amenidadObj.reglas_apartado.galeria_urls);
+            }
+            return amenidadObj;
+        });
+
+        if (req.query.encrypt === 'true') {
+            const responseData = {
+                estado: 'exito',
+                mensaje: 'Amenidades disponibles obtenidas exitosamente',
+                data: amenidadesConUrls
+            };
+            const encryptedResponse = Encryption.encryptResponse(responseData);
+            return res.json(encryptedResponse);
+        }
+
+        return JsonResponse.success(res, amenidadesConUrls, 'Amenidades disponibles obtenidas exitosamente');
+    } catch (error) {
+        console.error('Error en disponibles amenidades:', error);
+        return JsonResponse.error(res, 'Error al obtener amenidades disponibles', 500);
+    }
+};
+
