@@ -412,6 +412,53 @@ exports.login = async (req, res) => {
 };
 
 /**
+ * Obtener perfil del usuario autenticado
+ * GET /usuarios/mi-perfil
+ */
+exports.miPerfil = async (req, res) => {
+    try {
+        // Obtener usuario_id del token JWT
+        const usuario_id = req.usuario?.usuario_id;
+        
+        if (!usuario_id) {
+            return JsonResponse.error(res, 'Usuario no identificado', 401);
+        }
+
+        // Buscar usuario por usuario_id
+        const usuario = await Usuario.findOne({ usuario_id: Number(usuario_id) });
+
+        if (!usuario) {
+            return JsonResponse.notFound(res, 'Usuario no encontrado');
+        }
+
+        // Construir URLs públicas para imágenes
+        const usuarioObj = usuario.toObject();
+        if (usuarioObj.documentos?.imagen_perfil_url) {
+            usuarioObj.documentos.imagen_perfil_url = buildImageUrl(req, usuarioObj.documentos.imagen_perfil_url);
+        }
+        if (usuarioObj.documentos?.imagen_ine_url) {
+            usuarioObj.documentos.imagen_ine_url = buildImageUrl(req, usuarioObj.documentos.imagen_ine_url);
+        }
+
+        // Opción para cifrar la respuesta
+        if (req.query.encrypt === 'true') {
+            const responseData = {
+                estado: 'exito',
+                mensaje: 'Perfil obtenido exitosamente',
+                data: usuarioObj
+            };
+            const encryptedResponse = Encryption.encryptResponse(responseData);
+            return res.json(encryptedResponse);
+        }
+
+        return JsonResponse.success(res, usuarioObj, 'Perfil obtenido exitosamente');
+    } catch (error) {
+        console.error('Error en miPerfil:', error);
+        return JsonResponse.error(res, 'Error al obtener perfil', 500);
+    }
+};
+
+/**
  * Logout de usuario (invalidar token)
  * POST /usuarios/logout
  */

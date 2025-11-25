@@ -79,17 +79,6 @@ class AmenidadesVista:
             self.page.update()
 
 
-        def reservar_amenidad_func(amenidad):
-            """Abre el diálogo o pantalla para reservar"""
-            print(f"Reservar amenidad: {amenidad.get('nombre')}")
-            # TODO: Implementar pantalla de reserva
-            snackbar = ft.SnackBar(
-                content=ft.Text(f"Funcionalidad de reserva para {amenidad.get('nombre')} en desarrollo"),
-                bgcolor="teal600",
-            )
-            self.page.snack_bar = snackbar
-            snackbar.open = True
-            self.page.update()
 
         def on_navigation_change(e):
             """Maneja el cambio de navegación"""
@@ -296,6 +285,14 @@ class AmenidadesVista:
             Homevista(self.page, self.controlador.api_client)
             self.page.update()
 
+    def reservar_amenidad_func(self, amenidad):
+        """Abre el diálogo o pantalla para reservar"""
+        print(f"Reservar amenidad: {amenidad.get('nombre')}")
+        # Importar y abrir la vista de reservar
+        from reservar import ReservarVista
+        self.page.clean()
+        ReservarVista(self.page, amenidad, self.controlador.api_client)
+
     def crear_card_amenidad(self, amenidad):
         """Crea un card para una amenidad"""
         nombre = amenidad.get('nombre', 'Sin nombre')
@@ -434,7 +431,7 @@ class AmenidadesVista:
                         ft.ElevatedButton(
                             "Reservar Ahora",
                             icon=ft.Icons.CALENDAR_TODAY,
-                            on_click=lambda e, a=amenidad: reservar_amenidad_func(a),
+                            on_click=lambda e, a=amenidad: self.reservar_amenidad_func(a),
                             bgcolor="teal600",
                             color="white",
                             expand=True,

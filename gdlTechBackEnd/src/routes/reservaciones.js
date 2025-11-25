@@ -9,6 +9,10 @@ const { requireAdmin } = require('../middleware/role.middleware');
 // IMPORTANTE: Esta ruta debe ir ANTES de /:id para que no la capture
 router.get('/mis-reservaciones', authMiddleware, reservacionesController.misReservaciones);
 
+// Ruta para usuarios normales: crear reservación (solo autenticación, sin requireAdmin)
+// IMPORTANTE: Esta ruta debe ir ANTES de /:id para que no la capture
+router.post('/crear', authMiddleware, reservacionesController.crear);
+
 // Rutas GET: solo requieren autenticación (usuarios normales pueden ver)
 router.get('/', authMiddleware, reservacionesController.index);
 router.get('/:id', authMiddleware, reservacionesController.show);

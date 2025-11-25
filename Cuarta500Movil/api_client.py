@@ -127,6 +127,16 @@ class ApiClient:
         
         return False, None, response.get('mensaje', 'Usuario no encontrado')
     
+    def obtener_mi_perfil(self, encrypt=False):
+        """Obtener perfil del usuario actual - GET /usuarios/mi-perfil"""
+        params = {'encrypt': 'true'} if encrypt else None
+        response, status_code = self._make_request('GET', '/usuarios/mi-perfil', params=params)
+        
+        if status_code == 200 and response.get('estado') == 'exito':
+            return True, response.get('data'), response.get('mensaje')
+        
+        return False, None, response.get('mensaje', 'Error al obtener perfil')
+    
     def actualizar_usuario(self, usuario_id, usuario_data, files=None):
         """Actualizar usuario - PUT /usuarios/:id"""
         if files:
@@ -299,9 +309,9 @@ class ApiClient:
     
     # ========== RESERVACIONES ==========
     def obtener_mis_reservas(self, encrypt=False):
-        """Obtener reservas del usuario actual - GET /reservaciones/mis-reservas"""
+        """Obtener reservas del usuario actual - GET /reservaciones/mis-reservaciones"""
         params = {'encrypt': 'true'} if encrypt else None
-        response, status_code = self._make_request('GET', '/reservaciones/mis-reservas', params=params)
+        response, status_code = self._make_request('GET', '/reservaciones/mis-reservaciones', params=params)
         
         if status_code == 200 and response.get('estado') == 'exito':
             return True, response.get('data', []), response.get('mensaje')
@@ -310,12 +320,8 @@ class ApiClient:
     
     def crear_reservacion(self, reservacion_data):
         """Crear reservación - POST /reservaciones/crear (para usuarios normales)"""
-        # Intentar primero con la ruta para usuarios normales
+        # Solo usar la ruta para usuarios normales, no intentar con la de admin
         response, status_code = self._make_request('POST', '/reservaciones/crear', data=reservacion_data)
-        
-        # Si falla, intentar con la ruta de admin (por compatibilidad)
-        if status_code not in [200, 201]:
-            response, status_code = self._make_request('POST', '/reservaciones', data=reservacion_data)
         
         if status_code in [200, 201] and response.get('estado') == 'exito':
             return True, response.get('data'), response.get('mensaje')

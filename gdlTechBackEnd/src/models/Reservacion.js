@@ -46,6 +46,10 @@ const ReservacionSchema = new Schema({
         enum: ['pendiente', 'pagado', 'reembolsado'], 
         default: 'pendiente' 
     },
+    usuario_id: { 
+        type: Number, 
+        required: false 
+    },
     created_at: { 
         type: Date, 
         default: Date.now 

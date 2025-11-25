@@ -40,6 +40,10 @@ router.post('/login', validarLogin, usuariosController.login);
 // POST /usuarios/logout - Logout (invalidar sesión)
 router.post('/logout', authMiddleware, /*requireAdmin,*/ usuariosController.logout);
 
+// GET /usuarios/mi-perfil - Obtener perfil del usuario autenticado (solo autenticación, sin requireAdmin)
+// IMPORTANTE: Esta ruta debe ir ANTES de /:id para que no la capture
+router.get('/mi-perfil', authMiddleware, usuariosController.miPerfil);
+
 // --- Rutas Privadas (Requieren Token de Administrador) ---
 // GET /usuarios - Obtener todos los usuarios
 router.get('/', authMiddleware, requireAdmin, usuariosController.index);
