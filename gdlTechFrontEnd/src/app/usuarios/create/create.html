@@ -1,0 +1,80 @@
+<div class="container mt-4">
+
+  <button class="btn btn-secondary mb-4" [routerLink]="['/main/usuarios']">
+      <i class="bi bi-arrow-left"></i> Regresar a Lista de Usuarios
+  </button>
+  
+  <div class="card p-4 mb-4 shadow-lg">
+    <h3 class="card-title mb-4 border-bottom pb-2">Crear Nuevo Usuario</h3>
+    
+    <form (ngSubmit)="submitUsuarioForm()" #usuarioForm="ngForm"> 
+      
+      <div class="row mb-3">
+        <div class="col-md-3">
+          <label>ID (Usuario_id)</label>
+          <input type="number" class="form-control" [(ngModel)]="nuevoUsuario.usuario_id" name="usuario_id" required>
+        </div>
+        <div class="col-md-3">
+          <label>Username</label>
+          <input type="text" class="form-control" [(ngModel)]="nuevoUsuario.username" name="username" required>
+        </div>
+        <div class="col-md-3">
+          <label>Contraseña</label>
+          <input type="password" class="form-control" [(ngModel)]="nuevoUsuario.password" name="password" required>
+        </div>
+        <div class="col-md-3">
+          <label>Rol</label>
+          <select class="form-control" [(ngModel)]="nuevoUsuario.rol" name="rol" required>
+            <option value="administrador">Administrador</option>
+            <option value="guardia">Guardia</option>
+            <option value="dueño">Dueño</option>
+            <option value="habitante">Habitante</option>
+            <option value="arrendatario">Arrendatario</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col-md-4"><label>Nombre</label><input type="text" class="form-control" [(ngModel)]="nuevoUsuario.nombre" name="nombre" required></div>
+        <div class="col-md-4"><label>Apellido Paterno</label><input type="text" class="form-control" [(ngModel)]="nuevoUsuario.apellido_paterno" name="apellido_paterno" required></div>
+        <div class="col-md-4"><label>Apellido Materno</label><input type="text" class="form-control" [(ngModel)]="nuevoUsuario.apellido_materno" name="apellido_materno" required></div>
+      </div>
+
+      <div class="row mb-3">
+          <div class="col-md-4"><label>Email</label><input type="email" class="form-control" [(ngModel)]="nuevoUsuario.email" name="email" required></div>
+          <div class="col-md-4"><label>Teléfono</label><input type="text" class="form-control" [(ngModel)]="nuevoUsuario.telefono" name="telefono" required></div>
+          <div class="col-md-4"><label>No. Casa</label><input type="text" class="form-control" [(ngModel)]="nuevoUsuario.numero_casa" name="numero_casa"></div>
+      </div>
+      
+      <div class="row border-top pt-3 mb-3">
+          <h5 class="col-12 mb-3">Detalles Adicionales</h5>
+          <div class="col-md-3"><label>RFC</label><input type="text" class="form-control" [(ngModel)]="nuevoUsuario.perfil_detalle.rfc" name="rfc"></div>
+          <div class="col-md-3"><label>NSS</label><input type="text" class="form-control" [(ngModel)]="nuevoUsuario.perfil_detalle.nss" name="nss"></div>
+          <div class="col-md-3"><label>Modelo Auto</label><input type="text" class="form-control" [(ngModel)]="nuevoUsuario.perfil_detalle.auto.modelo" name="modelo"></div>
+          <div class="col-md-3"><label>Color Auto</label><input type="text" class="form-control" [(ngModel)]="nuevoUsuario.perfil_detalle.auto.color" name="color"></div>
+          <div class="col-md-3"><label>Placas Auto</label><input type="text" class="form-control" [(ngModel)]="nuevoUsuario.perfil_detalle.auto.placas" name="placas"></div>
+      </div>
+
+
+      <div class="row border-top pt-3 mb-3">
+        <h5 class="col-12 mb-3">Gestión de Documentos</h5>
+        <div class="col-md-6">
+          <label for="imagen_perfil" class="form-label">Imagen de Perfil</label>
+          <input type="file" (change)="onFileSelected($event, 'perfil')" accept="image/*" class="form-control">
+        </div>
+        <div class="col-md-6">
+          <label for="imagen_ine" class="form-label">Imagen INE</label>
+          <input type="file" (change)="onFileSelected($event, 'ine')" accept="image/*" class="form-control">
+        </div>
+      </div>
+      
+      <div class="row border-top pt-3">
+        <div class="col-12 text-end">
+          <button type="submit" class="btn btn-primary" [disabled]="!usuarioForm.valid">
+            <i class="bi bi-person-plus-fill"></i> Crear Usuario
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

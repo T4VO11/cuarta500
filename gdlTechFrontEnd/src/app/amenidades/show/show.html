@@ -1,0 +1,92 @@
+<div class="container mt-4">
+    <button class="btn btn-secondary mb-4" (click)="regresar()">
+        <i class="bi bi-arrow-left"></i> Regresar a Lista de Amenidades
+    </button>
+
+    <div *ngIf="isLoading" class="alert alert-info">Cargando información de la amenidad...</div>
+    <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+
+    <div *ngIf="amenidad" class="card shadow-lg">
+        <div class="card-header bg-success text-white">
+            <h3 class="mb-0">Detalle de Amenidad: {{ amenidad.nombre }}</h3>
+        </div>
+        <div class="card-body">
+            
+            <div class="row">
+                <div class="col-md-6 border-end">
+                    <h4 class="mb-3 text-success">Información General</h4>
+                    <ul class="list-group list-group-flush mb-4">
+                        <li class="list-group-item"><strong>ID Interno (BD):</strong> {{ amenidad._id }}</li>
+                        <li class="list-group-item"><strong>ID Amenidad:</strong> {{ amenidad.amenidad_id }}</li>
+                        <li class="list-group-item"><strong>ID Condominio:</strong> {{ amenidad.condominio_id }}</li>
+                        <li class="list-group-item"><strong>Tipo:</strong> {{ amenidad.tipo }}</li>
+                        <li class="list-group-item"><strong>Estado:</strong> <span class="badge bg-primary">{{ amenidad.estado }}</span></li>
+                    </ul>
+                    
+                    <h4 class="mt-4 mb-3 text-success">Detalle de Catálogo</h4>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <strong>Precio:</strong> {{ amenidad.catalogo_detalle?.precio | currency:'USD':'symbol':'1.2-2' }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Categoría:</strong> {{ amenidad.catalogo_detalle?.categoria || 'N/A' }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Motivo (Uso):</strong> {{ amenidad.catalogo_detalle?.motivo || 'N/A' }}
+                        </li>
+                    </ul>
+
+                    <h4 class="mt-4 mb-3 text-success">Descripción</h4>
+                    <p class="text-muted">{{ amenidad.descripcion || 'Sin descripción detallada.' }}</p>
+
+                </div>
+                
+                <div class="col-md-6">
+                    <h4 class="mb-3 text-success">Reglas de Reserva y Apartado</h4>
+                    <ul class="list-group list-group-flush" *ngIf="amenidad.reglas_apartado">
+                        <li class="list-group-item">
+                            <strong>Costo Apartado:</strong> {{ amenidad.reglas_apartado.costo_apartado | currency:'USD':'symbol':'1.2-2' }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Capacidad Máx:</strong> {{ amenidad.reglas_apartado.capacidad_maxima }} personas
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Máx. Horas/Reserva:</strong> {{ amenidad.reglas_apartado.horario_maximo_horas }} hrs.
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Días de Aviso (Anticipación):</strong> {{ amenidad.reglas_apartado.dias_anticipacion }} días
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Horario Apertura:</strong> {{ amenidad.reglas_apartado.horario_inicio }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Horario Cierre:</strong> {{ amenidad.reglas_apartado.horario_fin }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Días Permitidos:</strong> {{ amenidad.reglas_apartado.dias_permitidos?.join(', ') || 'Todos los días' }}
+                        </li>
+                    </ul>
+                    
+                    <h4 class="mt-4 mb-3 text-success">Galería de Imágenes</h4>
+                    
+                    <div *ngIf="!amenidad.reglas_apartado?.galeria_urls?.length" class="alert alert-warning">
+                        No hay imágenes cargadas.
+                    </div>
+
+                    <div *ngIf="amenidad.reglas_apartado?.galeria_urls?.length" class="row">
+    <div class="col-md-4 mb-3" *ngFor="let url of amenidad.reglas_apartado.galeria_urls">
+        <img [src]="getImagenUrl(url)" 
+             alt="Galería de Amenidad" 
+             class="img-fluid rounded shadow-sm" 
+             style="height: 100px; width: 100%; object-fit: cover;">
+    </div>
+</div>
+                </div>
+            </div>
+
+        </div>
+        <div class="card-footer text-muted">
+             Creado en: {{ amenidad.createdAt | date:'short' }} | Actualizado en: {{ amenidad.updatedAt | date:'short' }}
+        </div>
+    </div>
+</div>

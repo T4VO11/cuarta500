@@ -1,0 +1,62 @@
+<div class="container mt-4">
+    <button class="btn btn-secondary mb-4" (click)="regresar()">
+        <i class="bi bi-arrow-left"></i> Regresar a Lista de Usuarios
+    </button>
+
+    <div *ngIf="isLoading" class="alert alert-info">Cargando información del usuario...</div>
+    <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+
+    <div *ngIf="usuario" class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">Detalle Completo del Usuario: {{ usuario.nombre }} {{ usuario.apellido_paterno }}</h3>
+        </div>
+        <div class="card-body">
+            
+            <div class="row">
+                <div class="col-md-4 text-center border-end">
+                    <h5 class="mt-3">Rol: <span class="badge bg-success">{{ usuario.rol }}</span></h5>
+                    
+                    <div class="my-4">
+                        <img [src]="usuario.documentos?.imagen_perfil_url || 'https://via.placeholder.com/150'" 
+                             alt="Perfil" 
+                             class="rounded-circle shadow-sm" 
+                             style="width: 150px; height: 150px; object-fit: cover;">
+                        <p class="text-muted mt-2">Imagen de Perfil</p>
+                    </div>
+                </div>
+                
+                <div class="col-md-8">
+                    <h4 class="mb-3">Datos Generales</h4>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>ID Interno:</strong> {{ usuario.usuario_id }}</li>
+                        <li class="list-group-item"><strong>Username:</strong> {{ usuario.username }}</li>
+                        <li class="list-group-item"><strong>No. Casa:</strong> {{ usuario.numero_casa }}</li>
+                        <li class="list-group-item"><strong>Email:</strong> {{ usuario.email }}</li>
+                        <li class="list-group-item"><strong>Teléfono:</strong> {{ usuario.telefono }}</li>
+                    </ul>
+
+                    <h4 class="mt-4 mb-3">Detalle de Perfil</h4>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>RFC:</strong> {{ usuario.perfil_detalle?.rfc || 'N/A' }}</li>
+                        <li class="list-group-item"><strong>NSS:</strong> {{ usuario.perfil_detalle?.nss || 'N/A' }}</li>
+                        <li class="list-group-item"><strong>Auto:</strong> {{ usuario.perfil_detalle?.auto?.modelo || 'N/A' }}</li>
+                        <li class="list-group-item"><strong>Placas:</strong> {{ usuario.perfil_detalle?.auto?.placas || 'N/A' }}</li>
+                        
+                        <li class="list-group-item">
+                            <strong>Documento INE:</strong> 
+                            <a *ngIf="usuario.documentos?.imagen_ine_url" 
+                                [href]="usuario.documentos.imagen_ine_url" 
+                                target="_blank" 
+                                class="btn btn-sm btn-info text-white ms-2">Ver Documento</a>
+                            <span *ngIf="!usuario.documentos?.imagen_ine_url">No disponible</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+        <div class="card-footer text-muted">
+             Usuario creado en: {{ usuario.createdAt | date:'short' }}
+        </div>
+    </div>
+</div>

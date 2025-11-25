@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const app = express();
-
+const path = require('path');
 const connectDB = require('./src/config/mongoose'); 
 // Conectar a MongoDB (no bloquea el inicio del servidor)
 connectDB().catch(err => {
@@ -11,6 +11,10 @@ connectDB().catch(err => {
 const port = process.env.PORT || 3000;
 const cors = require('cors');
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use('/uploads',express.static(path.join(__dirname, 'uploads')));
+
 // Middleware
 app.use(cors({
     origin: ['http://localhost:4200', 'http://127.0.0.1:4200', 'http://localhost:3000'],
@@ -19,9 +23,6 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static('uploads'));
 
 // Middleware de logging para debug
 app.use((req, res, next) => {
