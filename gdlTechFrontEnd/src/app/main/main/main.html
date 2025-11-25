@@ -1,0 +1,35 @@
+<Body>
+<header class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
+    <div class="container-fluid">
+        <a class="navbar-brand" routerLink="/main">CUARTA 500 | Residencial</a>
+            <button class="btn btn-danger" (click)="cerrarSesion()">
+                <i class="bi bi-box-arrow-right"></i> Cerrar Sesión 
+            </button>
+    </div>
+</header>
+
+<main> <div class="main-content-wrapper"> <nav class="sidebar-menu">
+    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <!-- Links para las tablas principales -->
+                <li><a routerLink="/main/usuarios" routerLinkActive="active">Usuarios</a></li>
+                <li><a routerLink="/main/amenidades" routerLinkActive="active">Amenidades</a> </li>
+                <li><a routerLink="/main/bitacoras" routerLinkActive="active">Bitácoras</a></li>
+                <li><a routerLink="/main/incidentes" routerLinkActive="active">Incidentes</a></li>
+                <li><a routerLink="/main/listadoAdeudos" routerLinkActive="active">Listado de Adeudos</a></li>
+                <li><a routerLink="/main/invitarAmigos" routerLinkActive="active">Invitar Amigos</a></li>
+                <li><a routerLink="/main/reglamentos" routerLinkActive="active">Reglamentos</a></li>
+                <li><a routerLink="/main/reporteFinanzas" routerLinkActive="active">Reporte de Finanzas</a></li>
+                <li><a routerLink="/main/reservaciones" routerLinkActive="active">Reservaciones</a></li>     
+            </ul>
+
+        </nav>
+        <div class="content-area">
+            <router-outlet></router-outlet>
+        </div>
+    </div>
+</main>
+
+<footer class="bg-dark text-white text-center p-3">
+    &copy; 2024 CUARTA 500 | Residencial. Todos los derechos reservados.
+</footer>
+</Body>

@@ -6,6 +6,7 @@ const { buildImageUrls } = require('../../utils/imageUrlHelper');
 
 exports.index = async (req, res) => {
     try {
+        console.log('index ');
         const amenidades = await Amenidad.find({ condominio_id: 'C500' })
             .sort({ amenidad_id: 1 });
 
@@ -37,6 +38,7 @@ exports.index = async (req, res) => {
 
 exports.show = async (req, res) => {
     try {
+        console.log('SHOW ID de amenidad solicitado:');
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
@@ -71,6 +73,7 @@ exports.show = async (req, res) => {
 
 exports.store = async (req, res) => {
     try {
+      
         const {
             amenidad_id,
             tipo,
@@ -92,8 +95,12 @@ exports.store = async (req, res) => {
 
         // Manejar archivos de galería si se suben
         let reglasApartadoData = reglas_apartado ? (typeof reglas_apartado === 'string' ? JSON.parse(reglas_apartado) : reglas_apartado) : {};
+console.log('save req.files:', req.files);
+console.log('save req.files.galeria:', req.files.galeria);
         if (req.files && req.files.galeria) {
-            reglasApartadoData.galeria_urls = req.files.galeria.map(file => `amenidades/${file.filename}`);
+  reglasApartadoData.galeria_urls = req.files.galeria.map(
+    file => `uploads/amenidades/${file.filename}`
+  );
         }
 
         const nuevaAmenidad = new Amenidad({
@@ -110,7 +117,7 @@ exports.store = async (req, res) => {
             reglas_apartado: reglasApartadoData,
             transaccion_detalle: transaccion_detalle ? (typeof transaccion_detalle === 'string' ? JSON.parse(transaccion_detalle) : transaccion_detalle) : {}
         });
-
+console.log('Nueva Amenidad antes de guardar:', nuevaAmenidad);
         await nuevaAmenidad.save();
 
         const amenidadObj = nuevaAmenidad.toObject();
@@ -130,6 +137,7 @@ exports.store = async (req, res) => {
 
 exports.update = async (req, res) => {
     try {
+        console.log('update ');
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
@@ -153,23 +161,36 @@ exports.update = async (req, res) => {
         } = req.body;
 
         // Manejar archivos de galería si se suben
-        if (req.files && req.files.galeria) {
-            const nuevasUrls = req.files.galeria.map(file => `amenidades/${file.filename}`);
-            if (amenidad.reglas_apartado) {
-                amenidad.reglas_apartado.galeria_urls = [
-                    ...(amenidad.reglas_apartado.galeria_urls || []),
-                    ...nuevasUrls
-                ];
-            }
-        }
+       if (req.files && req.files.length > 0) { // Comprobar si hay archivos subidos
+    
+    // Asumimos que todos los archivos en req.files son de la galería
+    const nuevasUrls = req.files.map(
+    file => `uploads/amenidades/${file.filename}`
+        );
+    // Verificamos si reglas_apartado existe y concatenamos
+    if (amenidad.reglas_apartado) {
+        // Concatenar las URLs viejas con las nuevas (las viejas están en amenidad.reglas_apartado.galeria_urls)
+        amenidad.reglas_apartado.galeria_urls = [
+            ...(amenidad.reglas_apartado.galeria_urls || []),
+            ...nuevasUrls
+        ];
+    } else {
+        // Si reglas_apartado no existe, lo inicializamos con la galería
+        amenidad.reglas_apartado = { galeria_urls: nuevasUrls };
+    }
+}
 
         if (tipo) amenidad.tipo = tipo;
         if (nombre) amenidad.nombre = nombre;
         if (descripcion !== undefined) amenidad.descripcion = descripcion;
         if (estado) amenidad.estado = estado;
         if (motivo !== undefined) amenidad.motivo = motivo;
-        if (espacio_ref_id !== undefined) amenidad.espacio_ref_id = espacio_ref_id;
-        if (usuario_id !== undefined) amenidad.usuario_id = usuario_id;
+        if (espacio_ref_id !== undefined && espacio_ref_id !== null) { 
+            amenidad.espacio_ref_id = espacio_ref_id;
+            }
+        if (usuario_id !== undefined && usuario_id !== null) {
+            amenidad.usuario_id = usuario_id;
+            }
         if (catalogo_detalle) {
             try {
                 amenidad.catalogo_detalle = { ...amenidad.catalogo_detalle, ...JSON.parse(catalogo_detalle) };
@@ -180,7 +201,7 @@ exports.update = async (req, res) => {
         if (reglas_apartado) {
             try {
                 const reglasData = typeof reglas_apartado === 'string' ? JSON.parse(reglas_apartado) : reglas_apartado;
-                amenidad.reglas_apartado = { ...amenidad.reglas_apartado, ...reglasData };
+                Object.assign(amenidad.reglas_apartado, reglasData);
             } catch {
                 amenidad.reglas_apartado = { ...amenidad.reglas_apartado, ...reglas_apartado };
             }
@@ -193,7 +214,7 @@ exports.update = async (req, res) => {
                 amenidad.transaccion_detalle = { ...amenidad.transaccion_detalle, ...transaccion_detalle };
             }
         }
-
+console.log('Amenidad antes de guardar:', amenidad);
         await amenidad.save();
 
         const amenidadObj = amenidad.toObject();

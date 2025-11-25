@@ -1,0 +1,40 @@
+html {
+    height: 100%; 
+}
+
+body {
+    min-height: 100vh; 
+    display: flex; 
+    flex-direction: column; 
+    
+    margin: 0; 
+}
+
+main {
+    flex-grow: 1; 
+}
+
+/* 2. Estilos para el nuevo contenedor Flex de la barra lateral y el contenido */
+.main-content-wrapper {
+    display: flex; /* Pone los elementos hijos (nav y div) uno al lado del otro */
+    flex-grow: 1; /* Asegura que ocupe todo el espacio disponible dentro del <main> */
+    /* Asegura que el contenido ocupe toda la altura visible */
+    min-height: calc(100vh - 56px); /* 100vh menos la altura del header (ej. 56px) */
+}
+
+/* 3. Estilos para la barra de navegación (Sidebar) */
+.sidebar-menu {
+    width: 250px; /* Dale un ancho fijo para que no se mueva */
+    flex-shrink: 0; /* IMPEDIR que se haga más pequeña cuando el contenido se llena */
+    padding: 20px; /* Espacio interno para que se vea bien */
+    background-color: #f8f9fa; /* Color de fondo para distinguirla */
+    /* Asegura que los links estén alineados */
+    padding-top: 15px;
+}
+
+/* 4. Estilos para el área de contenido (donde está el router-outlet) */
+.content-area {
+    flex-grow: 1; /* ¡CLAVE! Esto hace que el contenido ocupe todo el espacio restante */
+    padding: 20px; /* Espacio para que el contenido no se pegue a los bordes */
+    overflow-y: auto; /* Si el contenido es largo, solo se desplaza esta área, no toda la página */
+}

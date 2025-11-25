@@ -1,0 +1,53 @@
+<h2>Gestión de Amenidades (Productos)</h2>
+
+<button class="btn btn-primary mb-3" routerLink="/main/amenidades/create">
+    <i class="bi bi-plus-circle"></i> Crear Nueva Amenidad
+</button>
+
+<h3 class="mt-5">Listado de Amenidades</h3>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
+  
+    <div class="col" *ngFor="let amenidad of amenidades">
+        <div class="card h-100 shadow-sm">
+            
+            <img [src]="getImagenUrl(amenidad.reglas_apartado?.galeria_urls[0])" 
+     *ngIf="amenidad.reglas_apartado?.galeria_urls?.length"
+     class="card-img-top" 
+     alt="Imagen de {{ amenidad.nombre }}"
+     style="height: 200px; object-fit: cover; cursor: pointer;"
+     
+     (click)="verImagen(getImagenUrl(amenidad.reglas_apartado.galeria_urls[0]), amenidad.nombre)">
+            
+            <div *ngIf="!amenidad.reglas_apartado?.galeria_urls?.length" class="text-center p-5 bg-light border-bottom" style="height: 200px;">
+                <i class="bi bi-image" style="font-size: 3rem; color: #ced4da;"></i>
+                <p class="text-muted mt-2">Sin Fotos</p>
+            </div>
+
+            <div class="card-body">
+                <h5 class="card-title">{{ amenidad.nombre }}</h5>
+                <p class="card-subtitle mb-2 text-muted">Tipo: {{ amenidad.tipo }} | Estado: {{ amenidad.estado }}</p>
+                <p class="card-text">{{ amenidad.descripcion }}</p>
+            </div>
+
+            <div class="card-footer d-flex justify-content-between">
+                
+                <a class="btn btn-sm btn-info text-white" 
+                   [routerLink]="['/main/amenidades', amenidad._id]">
+                   <i class="bi bi-eye"></i> Detalle
+                </a>
+                
+                <div>
+                    <a class="btn btn-sm btn-warning me-2" 
+                       [routerLink]="['/main/amenidades', amenidad._id, 'edit']">
+                       <i class="bi bi-pencil"></i> Editar
+                    </a>
+                    <button class="btn btn-sm btn-danger" 
+                            (click)="deleteAmenidad(amenidad._id)">
+                       <i class="bi bi-trash"></i> Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

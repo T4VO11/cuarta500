@@ -1,0 +1,43 @@
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg border-0 rounded-4">
+                <h3 class="card-header text-center bg-primary text-white fs-4 rounded-top-4">
+                    CUARTA 500 Residencial
+                </h3>
+                <div class="card-body p-4">
+                    <h5 class="card-title text-center mb-4 text-muted"></h5>
+
+                    <!-- El (ngSubmit) llama a la función onSubmit() en index.ts -->
+                    <form (ngSubmit)="onSubmit()">
+                        
+                        <div class="mb-3">
+                            <label for="username" class="form-label text-dark">Usuario (Username)</label>
+                            <!-- Enlace a credentials.username -->
+                            <input type="text" class="form-control" id="username" 
+                                   [(ngModel)]="credentials.username" name="username" required 
+                                   placeholder="">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="password" class="form-label text-dark">Contraseña</label>
+                            <!-- Enlace a credentials.password -->
+                            <input type="password" class="form-control" id="password" 
+                                   [(ngModel)]="credentials.password" name="password" required
+                                   placeholder="">
+                        </div>
+                        
+                        <!-- Muestra errores si el login falla -->
+                        <div *ngIf="errorMessage" class="alert alert-danger p-2 small">
+                            <i class="bi bi-x-octagon-fill me-2"></i>{{ errorMessage }}
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success w-100 fs-5 mt-3 shadow-sm">
+                            <i class="bi bi-door-open-fill me-2"></i> Iniciar Sesión
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

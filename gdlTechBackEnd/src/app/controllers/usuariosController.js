@@ -143,10 +143,10 @@ exports.store = async (req, res) => {
         }
         if (req.files) {
             if (req.files.imagen_perfil && req.files.imagen_perfil[0]) {
-                documentosData.imagen_perfil_url = `usuarios/${req.files.imagen_perfil[0].filename}`;
+                documentosData.imagen_perfil_url = `uploads/usuarios/${req.files.imagen_perfil[0].filename}`;
             }
             if (req.files.imagen_ine && req.files.imagen_ine[0]) {
-                documentosData.imagen_ine_url = `usuarios/${req.files.imagen_ine[0].filename}`;
+                documentosData.imagen_ine_url = `uploads/usuarios/${req.files.imagen_ine[0].filename}`;
             }
         }
 
@@ -267,10 +267,10 @@ exports.update = async (req, res) => {
         }
         if (req.files) {
             if (req.files.imagen_perfil && req.files.imagen_perfil[0]) {
-                documentosData.imagen_perfil_url = `usuarios/${req.files.imagen_perfil[0].filename}`;
+                documentosData.imagen_perfil_url = `uploads/usuarios/${req.files.imagen_perfil[0].filename}`;
             }
             if (req.files.imagen_ine && req.files.imagen_ine[0]) {
-                documentosData.imagen_ine_url = `usuarios/${req.files.imagen_ine[0].filename}`;
+                documentosData.imagen_ine_url = `uploads/usuarios/${req.files.imagen_ine[0].filename}`;
             }
         }
 

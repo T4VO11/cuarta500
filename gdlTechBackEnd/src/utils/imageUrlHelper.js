@@ -4,7 +4,7 @@
  */
 const buildImageUrl = (req, imagePath) => {
     if (!imagePath) return '';
-    
+    console.log('buildImageUrl - imagePath:', imagePath);
     // Si ya es una URL completa, retornarla tal cual
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
         return imagePath;
@@ -24,6 +24,7 @@ const buildImageUrl = (req, imagePath) => {
  * Construir múltiples URLs de imágenes (para arrays)
  */
 const buildImageUrls = (req, imagePaths) => {
+    console.log('buildImageUrls - imagePaths:', imagePaths);
     if (!Array.isArray(imagePaths)) return imagePaths;
     
     return imagePaths.map(path => buildImageUrl(req, path));

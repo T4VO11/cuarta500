@@ -38,7 +38,7 @@ router.post('/registrar', multerOptional, validarCrearUsuario, usuariosControlle
 router.post('/login', validarLogin, usuariosController.login);
 
 // POST /usuarios/logout - Logout (invalidar sesión)
-router.post('/logout', authMiddleware, requireAdmin, usuariosController.logout);
+router.post('/logout', authMiddleware, /*requireAdmin,*/ usuariosController.logout);
 
 // --- Rutas Privadas (Requieren Token de Administrador) ---
 // GET /usuarios - Obtener todos los usuarios
