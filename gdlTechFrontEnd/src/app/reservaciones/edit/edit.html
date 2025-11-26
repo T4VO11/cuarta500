@@ -1,1 +1,107 @@
-<p>edit works!</p>
+<div class="container mt-4">
+    <!-- Botón de Regreso -->
+    <button class="btn btn-secondary mb-4" (click)="regresar()">
+        <i class="bi bi-arrow-left"></i> Regresar al Detalle
+    </button>
+
+    <div class="card shadow-lg border-0 rounded-4">
+        <div class="card-header bg-warning text-dark">
+            <h3 class="mb-0">Editando Reservación #{{ reservacionAEditar.reservacion_id || '...' }}</h3>
+        </div>
+        
+        <div class="card-body p-4">
+            <form #form="ngForm" (ngSubmit)="submitUpdate(form)">
+                
+                <div *ngIf="amenidad" class="row mb-4 border-bottom pb-3">
+                    <div class="col-md-5">
+                        <!-- Muestra la primera imagen de la amenidad -->
+                        <!-- <img [src]="amenidad.reglas_apartado?.galeria_urls?.[0]" 
+                             alt="Imagen de Amenidad" 
+                             class="img-fluid rounded shadow-sm" style="max-height: 200px; object-fit: cover;">
+                        <p class="text-muted small mt-2">Amenidad: <strong>{{ amenidad.nombre }}</strong></p> -->
+                    </div> 
+                    <div class="col-md-7">
+                        <h4 class="text-secondary">Información General</h4>
+                        <p>Costo Base Fijo: <strong>${{ costoBaseFijo | number:'1.2-2' }} MXN</strong></p>
+                        <p>Total Actual: <strong class="text-danger">${{ reservacionAEditar.total | number:'1.2-2' }} MXN</strong></p>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <!-- Campo 1: Nombre del Residente -->
+                    <div class="col-md-6">
+                        <label for="nombre_residente" class="form-label">Nombre del Residente (*)</label>
+                        <input type="text" 
+                               id="nombre_residente" 
+                               name="nombre_residente" 
+                               class="form-control" 
+                               [(ngModel)]="reservacionAEditar.nombre_residente" 
+                               required>
+                    </div>
+
+                    <!-- Campo 2: Teléfono -->
+                    <div class="col-md-6">
+                        <label for="telefono" class="form-label">Teléfono (*)</label>
+                        <input type="tel" 
+                               id="telefono" 
+                               name="telefono" 
+                               class="form-control" 
+                               [(ngModel)]="reservacionAEditar.telefono" 
+                               required>
+                    </div>
+
+                    <!-- Campo 3: Fecha del Evento -->
+                    <div class="col-md-6">
+                        <label for="fecha_evento" class="form-label">Fecha del Evento (*)</label>
+                        <input type="date" 
+                               id="fecha_evento" 
+                               name="fecha_evento" 
+                               class="form-control" 
+                               [(ngModel)]="reservacionAEditar.fecha_evento" 
+                               required>
+                    </div>
+
+                    <!-- Campo 4: Estado de Pago -->
+                    <div class="col-md-6">
+                        <label for="estado_pago" class="form-label">Estado de Pago (*)</label>
+                        <select id="estado_pago" 
+                                name="estado_pago" 
+                                class="form-select" 
+                                [(ngModel)]="reservacionAEditar.estado_pago" 
+                                required>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="pagado">Pagado</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <h4 class="mt-4 border-bottom pb-2 text-primary">Servicios Extra (Opcional)</h4>
+                <div class="form-group">
+                    <!-- Checkboxes para Servicios Extra -->
+                    <div class="form-check" *ngFor="let opcion of opcionesExtra">
+                        <input class="form-check-input" 
+                               type="checkbox" 
+                               [id]="opcion.nombre" 
+                               name="opcion_{{opcion.nombre}}" 
+                               [(ngModel)]="opcion.selected"
+                               (change)="calcularTotal()">
+                        <label class="form-check-label d-flex justify-content-between align-items-center" [for]="opcion.nombre">
+                            {{ opcion.nombre }} 
+                            <span class="badge bg-info text-dark">+ ${{ opcion.costo | number:'1.2-2' }}</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <h3 class="mt-5 text-end text-danger">Total a Pagar: ${{ reservacionAEditar.total | number:'1.2-2' }} MXN</h3>
+
+                <div class="d-grid mt-4">
+                    <button type="submit" 
+                            class="btn btn-warning btn-lg" 
+                            [disabled]="form.invalid">
+                        <i class="bi bi-save"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

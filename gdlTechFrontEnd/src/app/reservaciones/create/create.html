@@ -1,1 +1,123 @@
-<p>create works!</p>
+<div class="container mt-4">
+    <!-- Botón de Regreso -->
+    <button class="btn btn-secondary mb-4" (click)="regresar()">
+        <i class="bi bi-arrow-left"></i> Regresar a Lista de Amenidades
+    </button>
+
+    <!--  PANTALLA 1: FORMULARIO DE RESERVACIÓN (Modo isReservacionMode) -->
+    <div *ngIf="isReservacionMode && !ticketData" class="card shadow-lg border-0 rounded-4">
+        <div class="card-header bg-success text-white">
+            <h3 class="mb-0">Reservación de Terraza {{ amenidad?.nombre || '' }}</h3>
+        </div>
+        <div class="card-body p-4">
+            
+            <div *ngIf="amenidad">
+                <!-- Información de la Amenidad (Imagen y Costo) -->
+                <div class="row mb-4 border-bottom pb-3">
+                    <div class="col-md-5">
+                        <!-- Muestra la primera imagen de la galería de la amenidad -->
+                        <!-- <img [src]="amenidad.reglas_apartado?.galeria_urls?.[0]" 
+                             alt="Imagen de Amenidad" 
+                             class="img-fluid rounded shadow-sm" style="max-height: 200px; object-fit: cover;">
+                        <p class="text-muted small mt-2">{{ amenidad.descripcion }}</p> -->
+                    </div>
+                    <div class="col-md-7">
+                        <!-- <h4 class="text-primary">Datos del Evento</h4> -->
+                        <p class="fs-5"><strong>Costo Base Fijo:</strong> <span class="text-danger">$1,000.00 MXN</span></p>
+                        <!-- <p><strong>Estado de la Amenidad:</strong> {{ amenidad.estado | titlecase }}</p> -->
+                    </div>
+                </div>
+
+                <!-- Formulario de Datos de la Reservación -->
+                <form (ngSubmit)="onSubmit(reservacionForm)" #reservacionForm="ngForm">
+                    
+                    <h5 class="mb-3">Datos del Residente y Evento</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nombre del Residente</label>
+                            <input type="text" class="form-control" [(ngModel)]="nuevaReservacion.nombre_residente" name="nombre_residente" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Teléfono</label>
+                            <input type="text" class="form-control" [(ngModel)]="nuevaReservacion.telefono" name="telefono" required>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label">Fecha del Evento</label>
+                            <input type="date" class="form-control" [(ngModel)]="nuevaReservacion.fecha_evento" name="fecha_evento" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Estado de Pago</label>
+                            <!-- Estado de pago fijo o seleccionable -->
+                            <select class="form-control" [(ngModel)]="nuevaReservacion.estado_pago" name="estado_pago" required>
+                                <option value="pendiente">Pendiente</option>
+                                <option value="pagado">Pagado (Demo)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Servicios Extra -->
+                    <h5 class="mb-3 border-top pt-3">Servicios Extra</h5>
+                    <div class="form-check" *ngFor="let opcion of opcionesExtra; let i = index">
+                        <input class="form-check-input" type="checkbox" id="extra{{i}}"
+                               (change)="toggleServicioExtra(opcion, $event.target.checked)">
+                        <label class="form-check-label" for="extra{{i}}">
+                            {{ opcion.nombre }} (Costo Adicional: +${{ opcion.costo | number:'1.2-2' }} MXN)
+                        </label>
+                    </div>
+
+                    <hr class="mt-4">
+                    <h4 class="text-end">Total a Pagar: <span class="text-danger">${{ nuevaReservacion.total | number:'1.2-2' }} MXN</span></h4>
+
+                    <div class="d-flex justify-content-end mt-4">
+                        <button type="submit" class="btn btn-success me-2" [disabled]="!reservacionForm.valid">
+                            <i class="bi bi-calendar-plus"></i> Confirmar Reservación
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div *ngIf="!amenidad">Cargando datos de amenidad...</div>
+        </div>
+    </div>
+    
+    <!--  TICKET DE ÉXITO (Se muestra después de guardar) -->
+    <div *ngIf="ticketData" class="card shadow-lg border-0 rounded-4 bg-light p-5">
+        <h2 class="text-success text-center mb-4"><i class="bi bi-check-circle-fill"></i> Reservación Creada con Éxito</h2>
+        <div class="alert alert-success text-center">
+            <p class="fs-5 mb-1">Folio de Transacción: <strong>{{ ticketData.reservacion_id }}</strong></p>
+            <p>Estado de Pago: <span class="badge bg-success">{{ ticketData.estado_pago | uppercase }}</span></p>
+        </div>
+
+        <h4 class="mt-4 border-bottom pb-2">Detalle del Evento</h4>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <strong>Residente:</strong> <span>{{ ticketData.nombre_residente }} (Tel: {{ ticketData.telefono }})</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <strong>Amenidad:</strong> <span>Terraza</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <strong>Fecha del Evento:</strong> <span>{{ ticketData.fecha_evento | date: 'fullDate' }}</span>
+            </li>
+        </ul>
+
+        <h4 class="mt-4 border-bottom pb-2">Desglose de Costos</h4>
+        <ul class="list-group">
+            <li class="list-group-item d-flex justify-content-between">Costo Base Fijo: <span>$1,000.00 MXN</span></li>
+            <li class="list-group-item d-flex justify-content-between bg-warning-light" *ngFor="let servicio of ticketData.servicios_extra">
+                Servicio Extra ({{ servicio.nombre }}): <span>+ ${{ servicio.costo | number:'1.2-2' }} MXN</span>
+            </li>
+        </ul>
+        <h4 class="mt-4 text-end text-danger">Total Final: ${{ ticketData.total | number:'1.2-2' }} MXN</h4>
+
+        <button class="btn btn-primary mt-4" (click)="regresar()">Volver a la Lista de Amenidades</button>
+    </div>
+    
+    <!-- FORMULARIO DE CREACIÓN DE AMENIDAD (Modo Normal - sin reservación) -->
+    <div *ngIf="!isReservacionMode && !ticketData">
+        <h3 class="text-danger">Modo Creación de Amenidad Normal</h3>
+        <p>Aquí iría el formulario para crear una nueva amenidad (que no sea la Terraza) o para el CRUD estándar.</p>
+    </div>
+
+</div>

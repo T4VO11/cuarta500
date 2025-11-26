@@ -1,1 +1,50 @@
-<p>show works!</p>
+<div class="container mt-4">
+    <button class="btn btn-secondary mb-4" (click)="regresar()">
+        <i class="bi bi-arrow-left"></i> Regresar a Lista de Reservaciones
+    </button>
+
+    <div *ngIf="isLoading" class="alert alert-info">Cargando detalles de la reservación...</div>
+
+    <div *ngIf="reservacion" class="card shadow-lg border-0 rounded-4">
+        <div class="card-header bg-dark text-white">
+            <h3 class="mb-0">Detalle de Reservación #{{ reservacion.reservacion_id }}</h3>
+        </div>
+        <div class="card-body p-4">
+            
+            <div class="row">
+                <div class="col-md-6 border-end">
+                    <h4 class="text-primary">Información del Evento</h4>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>Residente:</strong> {{ reservacion.nombre_residente }}</li>
+                        <li class="list-group-item"><strong>Teléfono:</strong> {{ reservacion.telefono }}</li>
+                        <li class="list-group-item"><strong>Fecha Evento:</strong> {{ reservacion.fecha_evento | date: 'fullDate' }}</li>
+                        <li class="list-group-item"><strong>Total Pagado:</strong> ${{ reservacion.total | number:'1.2-2' }} MXN</li>
+                    </ul>
+                </div>
+                
+                <div class="col-md-6">
+                    <h4 class="text-primary">Estados y Montos</h4>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>Estado General:</strong> <span class="badge bg-secondary">{{ reservacion.estado | titlecase }}</span></li>
+                        <li class="list-group-item"><strong>Estado de Pago:</strong> <span class="badge" [ngClass]="{'bg-success': reservacion.estado_pago === 'pagado', 'bg-warning text-dark': reservacion.estado_pago === 'pendiente'}">{{ reservacion.estado_pago | titlecase }}</span></li>
+                        <li class="list-group-item"><strong>Fecha de Creación:</strong> {{ reservacion.createdAt | date: 'short' }}</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h4 class="mt-4 border-bottom pb-2">Servicios Extra</h4>
+            <div *ngIf="reservacion.servicios_extra && reservacion.servicios_extra.length > 0; else noServicios">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center" *ngFor="let servicio of reservacion.servicios_extra">
+                        {{ servicio.nombre }}
+                        <span class="badge bg-info text-dark">+ ${{ servicio.costo | number:'1.2-2' }}</span>
+                    </li>
+                </ul>
+            </div>
+            <ng-template #noServicios>
+                <p class="text-muted">No se seleccionaron servicios extra.</p>
+            </ng-template>
+
+        </div>
+    </div>
+</div>

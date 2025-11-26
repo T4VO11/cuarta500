@@ -50,7 +50,7 @@ import { ShowComponent as ReporteFinanzasShowComponent } from './reporteFinanzas
 
 //  Componentes de reservaciones
 import { IndexComponent as ReservacionesIndexComponent } from './reservaciones/index/index';
-import { CreateComponent as ReservacionesCreateComponent } from './reservaciones/create/create';
+import { CreateComponent } from './reservaciones/create/create';
 import { EditComponent as ReservacionesEditComponent } from './reservaciones/edit/edit';
 import { ShowComponent as ReservacionesShowComponent } from './reservaciones/show/show';
 
@@ -78,10 +78,15 @@ export const routes: Routes = [
       { path: '', component: ReporteFinanzasIndexComponent },
 
       // Amenidades 
-        { path: 'amenidades', component: AmenidadesIndexComponent }, 
-        { path: 'amenidades/create', component: AmenidadesCreateComponent }, 
-        { path: 'amenidades/:id/edit', component: AmenidadesEditComponent }, 
-        { path: 'amenidades/:id', component: AmenidadesShowComponent }, 
+        { path: 'amenidades', children: [ // ⬅️ El prefijo es /main/amenidades
+        { path: 'create', component: AmenidadesCreateComponent }, 
+        { path: 'reservar/:id', component: CreateComponent }, 
+        { path: 'edit/:id', component: AmenidadesEditComponent }, 
+        { path: 'show/:id', component: AmenidadesShowComponent }, 
+        { path: '', component: AmenidadesIndexComponent }, 
+      ]},
+
+
 
       //  Bitacoras
         { path: 'bitacoras', component: BitacorasIndexComponent }, 
@@ -119,12 +124,20 @@ export const routes: Routes = [
         { path: 'reporteFinanzas/:id/edit', component: ReporteFinanzasEditComponent }, 
         { path: 'reporteFinanzas/:id', component: ReporteFinanzasShowComponent }, 
 
-      // reservaciones
-        { path: 'reservaciones', component: ReservacionesIndexComponent }, 
-        { path: 'reservaciones/create', component: ReservacionesCreateComponent }, 
-        { path: 'reservaciones/:id/edit', component: ReservacionesEditComponent }, 
-        { path: 'reservaciones/:id', component: ReservacionesShowComponent }, 
+      // // reservaciones
+      //   { path: 'reservaciones', component: ReservacionesIndexComponent }, 
+      //   { path: 'reservaciones/create', component: CreateComponent }, 
+      //   { path: 'reservaciones/:id/edit', component: ReservacionesEditComponent }, 
+      //   { path: 'reservaciones/:id', component: ReservacionesShowComponent }, 
 
+        // reservaciones
+        { path: 'reservaciones', children: [
+            { path: '', component: ReservacionesIndexComponent }, 
+            { path: 'reservaciones/create', component: CreateComponent }, 
+            { path: 'edit/:id', component: ReservacionesEditComponent }, 
+            { path: 'show/:id', component: ReservacionesShowComponent },
+        ]},
+        
       // Usuarios
         { path: 'usuarios', component: UsuariosIndexComponent }, 
         { path: 'usuarios/create', component: UsuariosCreateComponent }, 
