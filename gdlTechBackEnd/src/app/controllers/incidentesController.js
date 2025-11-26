@@ -8,15 +8,15 @@ exports.index = async (req, res) => {
         const incidentes = await Incidente.find({ condominio_id: 'C500' })
             .sort({ incidente_id: -1 });
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Incidentes obtenidos exitosamente',
-                data: incidentes
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Incidentes obtenidos exitosamente',
+        //         data: incidentes
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, incidentes, 'Incidentes obtenidos exitosamente');
     } catch (error) {
@@ -37,15 +37,15 @@ exports.show = async (req, res) => {
             return JsonResponse.notFound(res, 'Incidente no encontrado');
         }
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Incidente obtenido exitosamente',
-                data: incidente
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Incidente obtenido exitosamente',
+        //         data: incidente
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, incidente, 'Incidente obtenido exitosamente');
     } catch (error) {
@@ -130,15 +130,15 @@ exports.update = async (req, res) => {
 
         await incidente.save();
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Incidente actualizado exitosamente',
-                data: incidente
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Incidente actualizado exitosamente',
+        //         data: incidente
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, incidente, 'Incidente actualizado exitosamente');
     } catch (error) {

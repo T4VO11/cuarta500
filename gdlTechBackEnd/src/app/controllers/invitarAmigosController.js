@@ -8,15 +8,15 @@ exports.index = async (req, res) => {
         const invitaciones = await InvitarAmigo.find({ condominio_id: 'C500' })
             .sort({ createdAt: -1 });
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Invitaciones obtenidas exitosamente',
-                data: invitaciones
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Invitaciones obtenidas exitosamente',
+        //         data: invitaciones
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, invitaciones, 'Invitaciones obtenidas exitosamente');
     } catch (error) {
@@ -37,15 +37,15 @@ exports.show = async (req, res) => {
             return JsonResponse.notFound(res, 'Invitación no encontrada');
         }
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Invitación obtenida exitosamente',
-                data: invitacion
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Invitación obtenida exitosamente',
+        //         data: invitacion
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, invitacion, 'Invitación obtenida exitosamente');
     } catch (error) {
@@ -132,15 +132,15 @@ exports.update = async (req, res) => {
 
         await invitacion.save();
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Invitación actualizada exitosamente',
-                data: invitacion
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Invitación actualizada exitosamente',
+        //         data: invitacion
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, invitacion, 'Invitación actualizada exitosamente');
     } catch (error) {

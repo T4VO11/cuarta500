@@ -28,15 +28,15 @@ exports.index = async (req, res) => {
         });
 
         // Opción para cifrar la respuesta (usar query param ?encrypt=true)
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Usuarios obtenidos exitosamente',
-                data: usuariosConUrls
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Usuarios obtenidos exitosamente',
+        //         data: usuariosConUrls
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, usuariosConUrls, 'Usuarios obtenidos exitosamente');
     } catch (error) {
@@ -82,15 +82,15 @@ exports.show = async (req, res) => {
         }
 
         // Opción para cifrar la respuesta
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Usuario obtenido exitosamente',
-                data: usuarioObj
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Usuario obtenido exitosamente',
+        //         data: usuarioObj
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, usuarioObj, 'Usuario obtenido exitosamente');
     } catch (error) {
@@ -306,15 +306,15 @@ exports.update = async (req, res) => {
         }
 
         // Opción para cifrar la respuesta
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Usuario actualizado exitosamente',
-                data: usuarioObj
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Usuario actualizado exitosamente',
+        //         data: usuarioObj
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, usuarioObj, 'Usuario actualizado exitosamente');
     } catch (error) {
@@ -441,15 +441,15 @@ exports.miPerfil = async (req, res) => {
         }
 
         // Opción para cifrar la respuesta
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Perfil obtenido exitosamente',
-                data: usuarioObj
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Perfil obtenido exitosamente',
+        //         data: usuarioObj
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, usuarioObj, 'Perfil obtenido exitosamente');
     } catch (error) {

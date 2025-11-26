@@ -19,15 +19,15 @@ exports.index = async (req, res) => {
             return amenidadObj;
         });
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Amenidades obtenidas exitosamente',
-                data: amenidadesConUrls
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Amenidades obtenidas exitosamente',
+        //         data: amenidadesConUrls
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, amenidadesConUrls, 'Amenidades obtenidas exitosamente');
     } catch (error) {
@@ -54,15 +54,15 @@ exports.show = async (req, res) => {
             amenidadObj.reglas_apartado.galeria_urls = buildImageUrls(req, amenidadObj.reglas_apartado.galeria_urls);
         }
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Amenidad obtenida exitosamente',
-                data: amenidadObj
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Amenidad obtenida exitosamente',
+        //         data: amenidadObj
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, amenidadObj, 'Amenidad obtenida exitosamente');
     } catch (error) {
@@ -222,15 +222,15 @@ console.log('Amenidad antes de guardar:', amenidad);
             amenidadObj.reglas_apartado.galeria_urls = buildImageUrls(req, amenidadObj.reglas_apartado.galeria_urls);
         }
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Amenidad actualizada exitosamente',
-                data: amenidadObj
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Amenidad actualizada exitosamente',
+        //         data: amenidadObj
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, amenidadObj, 'Amenidad actualizada exitosamente');
     } catch (error) {
@@ -278,15 +278,15 @@ exports.disponibles = async (req, res) => {
             return amenidadObj;
         });
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Amenidades disponibles obtenidas exitosamente',
-                data: amenidadesConUrls
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Amenidades disponibles obtenidas exitosamente',
+        //         data: amenidadesConUrls
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, amenidadesConUrls, 'Amenidades disponibles obtenidas exitosamente');
     } catch (error) {

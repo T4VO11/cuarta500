@@ -9,15 +9,15 @@ exports.index = async (req, res) => {
         const reservaciones = await Reservacion.find()
             .sort({ reservacion_id: -1 });
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Reservaciones obtenidas exitosamente',
-                data: reservaciones
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Reservaciones obtenidas exitosamente',
+        //         data: reservaciones
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, reservaciones, 'Reservaciones obtenidas exitosamente');
     } catch (error) {
@@ -53,15 +53,15 @@ exports.show = async (req, res) => {
             return JsonResponse.notFound(res, 'Reservación no encontrada');
         }
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Reservación obtenida exitosamente',
-                data: reservacion
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Reservación obtenida exitosamente',
+        //         data: reservacion
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, reservacion, 'Reservación obtenida exitosamente');
     } catch (error) {
@@ -165,15 +165,15 @@ exports.crear = async (req, res) => {
 
         await nuevaReservacion.save();
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Reservación creada exitosamente',
-                data: nuevaReservacion
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Reservación creada exitosamente',
+        //         data: nuevaReservacion
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, nuevaReservacion, 'Reservación creada exitosamente', 201);
     } catch (error) {
@@ -234,15 +234,15 @@ exports.update = async (req, res) => {
 
         await reservacion.save();
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Reservación actualizada exitosamente',
-                data: reservacion
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Reservación actualizada exitosamente',
+        //         data: reservacion
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, reservacion, 'Reservación actualizada exitosamente');
     } catch (error) {
@@ -413,15 +413,15 @@ exports.misReservaciones = async (req, res) => {
         // SIEMPRE devolver solo las reservaciones validadas
         const reservacionesFinales = reservacionesValidadas;
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Reservaciones obtenidas exitosamente',
-                data: reservacionesFinales
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Reservaciones obtenidas exitosamente',
+        //         data: reservacionesFinales
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, reservacionesFinales, 'Reservaciones obtenidas exitosamente');
     } catch (error) {

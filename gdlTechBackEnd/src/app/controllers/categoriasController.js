@@ -12,15 +12,15 @@ exports.index = async (req, res) => {
         const categorias = await Categoria.find({ condominio_id: 'C500' })
             .sort({ categoria_id: 1 });
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Categorías obtenidas exitosamente',
-                data: categorias
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Categorías obtenidas exitosamente',
+        //         data: categorias
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, categorias, 'Categorías obtenidas exitosamente');
     } catch (error) {
@@ -45,15 +45,15 @@ exports.show = async (req, res) => {
             return JsonResponse.notFound(res, 'Categoría no encontrada');
         }
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Categoría obtenida exitosamente',
-                data: categoria
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Categoría obtenida exitosamente',
+        //         data: categoria
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, categoria, 'Categoría obtenida exitosamente');
     } catch (error) {
@@ -128,15 +128,15 @@ exports.update = async (req, res) => {
 
         await categoria.save();
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Categoría actualizada exitosamente',
-                data: categoria
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Categoría actualizada exitosamente',
+        //         data: categoria
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, categoria, 'Categoría actualizada exitosamente');
     } catch (error) {

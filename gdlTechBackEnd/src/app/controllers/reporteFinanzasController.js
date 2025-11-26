@@ -17,15 +17,15 @@ exports.index = async (req, res) => {
             return reporteObj;
         });
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Reportes obtenidos exitosamente',
-                data: reportesConUrls
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Reportes obtenidos exitosamente',
+        //         data: reportesConUrls
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, reportesConUrls, 'Reportes obtenidos exitosamente');
     } catch (error) {
@@ -51,15 +51,15 @@ exports.show = async (req, res) => {
             reporteObj.evidencia.imagen_url = buildImageUrl(req, reporteObj.evidencia.imagen_url);
         }
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Reporte obtenido exitosamente',
-                data: reporteObj
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Reporte obtenido exitosamente',
+        //         data: reporteObj
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, reporteObj, 'Reporte obtenido exitosamente');
     } catch (error) {
@@ -166,15 +166,15 @@ exports.update = async (req, res) => {
             reporteObj.evidencia.imagen_url = buildImageUrl(req, reporteObj.evidencia.imagen_url);
         }
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Reporte actualizado exitosamente',
-                data: reporteObj
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Reporte actualizado exitosamente',
+        //         data: reporteObj
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, reporteObj, 'Reporte actualizado exitosamente');
     } catch (error) {

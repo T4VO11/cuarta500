@@ -17,15 +17,15 @@ exports.index = async (req, res) => {
             return reglamentoObj;
         });
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Reglamentos obtenidos exitosamente',
-                data: reglamentosConUrls
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Reglamentos obtenidos exitosamente',
+        //         data: reglamentosConUrls
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, reglamentosConUrls, 'Reglamentos obtenidos exitosamente');
     } catch (error) {
@@ -51,15 +51,15 @@ exports.show = async (req, res) => {
             reglamentoObj.catalogo_detalle.pdf_url = buildImageUrl(req, reglamentoObj.catalogo_detalle.pdf_url);
         }
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Reglamento obtenido exitosamente',
-                data: reglamentoObj
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Reglamento obtenido exitosamente',
+        //         data: reglamentoObj
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, reglamentoObj, 'Reglamento obtenido exitosamente');
     } catch (error) {
@@ -156,15 +156,15 @@ exports.update = async (req, res) => {
             reglamentoObj.catalogo_detalle.pdf_url = buildImageUrl(req, reglamentoObj.catalogo_detalle.pdf_url);
         }
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Reglamento actualizado exitosamente',
-                data: reglamentoObj
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Reglamento actualizado exitosamente',
+        //         data: reglamentoObj
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, reglamentoObj, 'Reglamento actualizado exitosamente');
     } catch (error) {

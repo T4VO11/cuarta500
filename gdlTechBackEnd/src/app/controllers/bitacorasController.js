@@ -17,15 +17,15 @@ exports.index = async (req, res) => {
             return bitacoraObj;
         });
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Bitácoras obtenidas exitosamente',
-                data: bitacorasConUrls
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Bitácoras obtenidas exitosamente',
+        //         data: bitacorasConUrls
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, bitacorasConUrls, 'Bitácoras obtenidas exitosamente');
     } catch (error) {
@@ -51,15 +51,15 @@ exports.show = async (req, res) => {
             bitacoraObj.detalle_acceso.imagen_ine_url = buildImageUrl(req, bitacoraObj.detalle_acceso.imagen_ine_url);
         }
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Bitácora obtenida exitosamente',
-                data: bitacoraObj
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Bitácora obtenida exitosamente',
+        //         data: bitacoraObj
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, bitacoraObj, 'Bitácora obtenida exitosamente');
     } catch (error) {
@@ -190,15 +190,15 @@ exports.update = async (req, res) => {
             bitacoraObj.detalle_acceso.imagen_ine_url = buildImageUrl(req, bitacoraObj.detalle_acceso.imagen_ine_url);
         }
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Bitácora actualizada exitosamente',
-                data: bitacoraObj
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Bitácora actualizada exitosamente',
+        //         data: bitacoraObj
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, bitacoraObj, 'Bitácora actualizada exitosamente');
     } catch (error) {

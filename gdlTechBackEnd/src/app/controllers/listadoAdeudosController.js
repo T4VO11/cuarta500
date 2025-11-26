@@ -17,15 +17,15 @@ exports.index = async (req, res) => {
         const adeudos = await ListadoAdeudo.find(query)
             .sort({ transaccion_id: -1 });
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Adeudos obtenidos exitosamente',
-                data: adeudos
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Adeudos obtenidos exitosamente',
+        //         data: adeudos
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, adeudos, 'Adeudos obtenidos exitosamente');
     } catch (error) {
@@ -46,15 +46,15 @@ exports.show = async (req, res) => {
             return JsonResponse.notFound(res, 'Adeudo no encontrado');
         }
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Adeudo obtenido exitosamente',
-                data: adeudo
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Adeudo obtenido exitosamente',
+        //         data: adeudo
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, adeudo, 'Adeudo obtenido exitosamente');
     } catch (error) {
@@ -165,15 +165,15 @@ exports.update = async (req, res) => {
 
         await adeudo.save();
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Adeudo actualizado exitosamente',
-                data: adeudo
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Adeudo actualizado exitosamente',
+        //         data: adeudo
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, adeudo, 'Adeudo actualizado exitosamente');
     } catch (error) {
@@ -219,15 +219,15 @@ exports.misAdeudos = async (req, res) => {
         })
         .sort({ transaccion_id: -1 });
 
-        if (req.query.encrypt === 'true') {
-            const responseData = {
-                estado: 'exito',
-                mensaje: 'Adeudos obtenidos exitosamente',
-                data: adeudos
-            };
-            const encryptedResponse = Encryption.encryptResponse(responseData);
-            return res.json(encryptedResponse);
-        }
+        // if (req.query.encrypt === 'true') {
+        //     const responseData = {
+        //         estado: 'exito',
+        //         mensaje: 'Adeudos obtenidos exitosamente',
+        //         data: adeudos
+        //     };
+        //     const encryptedResponse = Encryption.encryptResponse(responseData);
+        //     return res.json(encryptedResponse);
+        // }
 
         return JsonResponse.success(res, adeudos, 'Adeudos obtenidos exitosamente');
     } catch (error) {
