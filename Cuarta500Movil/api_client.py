@@ -5,6 +5,7 @@ Maneja autenticación con JWT y todas las peticiones HTTP
 import requests
 import json
 import os
+from encryption import Encryption
 
 # URL base del backend (ajusta según tu configuración)
 BASE_URL = os.getenv("API_BASE_URL", "http://localhost:3000")
@@ -55,7 +56,29 @@ class ApiClient:
                 raise ValueError(f"Método HTTP no soportado: {method}")
             
             try:
-                return response.json(), response.status_code
+                response_data = response.json()
+                
+                # Detectar y descifrar respuestas cifradas
+                # El backend cifra solo el campo 'data' cuando está activado el cifrado
+                if isinstance(response_data, dict) and 'data' in response_data:
+                    data = response_data.get('data')
+                    # Si data es un string, verificar si está cifrado
+                    if isinstance(data, str) and Encryption.is_encrypted(data):
+                        try:
+                            # Descifrar el campo data
+                            decrypted_data = Encryption.decrypt(data)
+                            response_data['data'] = decrypted_data
+                        except Exception as e:
+                            print(f"Error al descifrar respuesta: {e}")
+                            import traceback
+                            traceback.print_exc()
+                            # Si falla el descifrado, intentar usar la data sin descifrar
+                            # (puede que no esté cifrado o que la clave no coincida)
+                            print(f"Advertencia: No se pudo descifrar la respuesta. Verifica que ENCRYPTION_KEY coincida con el backend.")
+                            # Dejar la data como está para que el código pueda continuar
+                            pass
+                
+                return response_data, response.status_code
             except json.JSONDecodeError:
                 return {"estado": "error", "mensaje": "Respuesta no válida del servidor"}, response.status_code
                 
@@ -76,10 +99,51 @@ class ApiClient:
         response, status_code = self._make_request('POST', '/usuarios/login', data=data)
         
         if status_code == 200 and response.get('estado') == 'exito':
-            token = response.get('data', {}).get('token')
+            # El campo data ya debería estar descifrado automáticamente por _make_request
+            data_response = response.get('data', {})
+            
+            # Debug: verificar el tipo de data_response
+            print(f"DEBUG login - Tipo de data_response: {type(data_response)}")
+            if isinstance(data_response, str):
+                print(f"DEBUG login - data_response es string, longitud: {len(data_response)}")
+                print(f"DEBUG login - Primeros 100 chars: {data_response[:100]}")
+            
+            # Manejar caso donde data puede ser un dict (descifrado) o string (sin cifrar o error)
+            if isinstance(data_response, dict):
+                token = data_response.get('token')
+            elif isinstance(data_response, str):
+                # Si aún es string, puede estar cifrado o ser un error
+                print("DEBUG login - data_response es string, intentando procesar...")
+                # Si parece ser JSON sin cifrar, intentar parsearlo
+                if data_response.startswith('{') or data_response.startswith('['):
+                    try:
+                        data_response = json.loads(data_response)
+                        token = data_response.get('token') if isinstance(data_response, dict) else None
+                    except:
+                        token = None
+                # Si está cifrado, intentar descifrar
+                elif Encryption.is_encrypted(data_response):
+                    print("DEBUG login - Detectado formato cifrado, intentando descifrar...")
+                    try:
+                        data_response = Encryption.decrypt(data_response)
+                        token = data_response.get('token') if isinstance(data_response, dict) else None
+                    except Exception as e:
+                        print(f"DEBUG login - Error al descifrar: {e}")
+                        token = None
+                else:
+                    print("DEBUG login - data_response no es JSON ni está cifrado")
+                    token = None
+            else:
+                token = None
+            
             if token:
                 self.set_token(token)
-                return True, response.get('mensaje', 'Login exitoso'), response.get('data', {})
+                # Asegurar que data_response sea un dict para el retorno
+                if not isinstance(data_response, dict):
+                    data_response = {}
+                return True, response.get('mensaje', 'Login exitoso'), data_response
+            else:
+                print(f"DEBUG login - No se pudo obtener token. data_response: {data_response}")
         
         return False, response.get('mensaje', 'Error en el login'), None
     
@@ -311,22 +375,41 @@ class ApiClient:
     def obtener_mis_reservas(self, encrypt=False):
         """Obtener reservas del usuario actual - GET /reservaciones/mis-reservaciones"""
         params = {'encrypt': 'true'} if encrypt else None
+        print(f"Obteniendo reservas del usuario...")
         response, status_code = self._make_request('GET', '/reservaciones/mis-reservaciones', params=params)
         
+        print(f"Respuesta del servidor (obtener_mis_reservas): status={status_code}, response={response}")
+        
         if status_code == 200 and response.get('estado') == 'exito':
-            return True, response.get('data', []), response.get('mensaje')
+            reservas = response.get('data', [])
+            print(f"Reservas obtenidas: {len(reservas)} reservas")
+            return True, reservas, response.get('mensaje')
         
         return False, [], response.get('mensaje', 'Error al obtener reservas')
     
     def crear_reservacion(self, reservacion_data):
         """Crear reservación - POST /reservaciones/crear (para usuarios normales)"""
+        print(f"Enviando datos de reservación: {reservacion_data}")
         # Solo usar la ruta para usuarios normales, no intentar con la de admin
         response, status_code = self._make_request('POST', '/reservaciones/crear', data=reservacion_data)
+        
+        print(f"Respuesta del servidor (crear_reservacion): status={status_code}, response={response}")
         
         if status_code in [200, 201] and response.get('estado') == 'exito':
             return True, response.get('data'), response.get('mensaje')
         
         return False, None, response.get('mensaje', 'Error al crear reservación')
+    
+    # ========== BITÁCORAS / HISTORIAL DE ACCESOS ==========
+    def obtener_historial_accesos(self, encrypt=False):
+        """Obtener historial de accesos del usuario actual - GET /bitacoras/mi-historial"""
+        params = {'encrypt': 'true'} if encrypt else None
+        response, status_code = self._make_request('GET', '/bitacoras/mi-historial', params=params)
+        
+        if status_code == 200 and response.get('estado') == 'exito':
+            return True, response.get('data', []), response.get('mensaje')
+        
+        return False, [], response.get('mensaje', 'Error al obtener historial de accesos')
 
 
 

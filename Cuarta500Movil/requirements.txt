@@ -4,6 +4,7 @@ flet-geolocator
 requests
 qrcode[pil]
 Pillow
+cryptography
 
 
 

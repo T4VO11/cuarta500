@@ -386,8 +386,10 @@ class PagosVista:
     def on_swipe(self, e):
         """Maneja el gesto de swipe horizontal"""
         if e.velocity_x > 500:  # Swipe rápido a la derecha
-            # Ir a Perfil (si existe) o quedarse
-            print("Navegando a Perfil")
+            # Ir a Perfil
+            from perfil import PerfilVista
+            self.page.clean()
+            PerfilVista(self.page, self.controlador.api_client)
         elif e.velocity_x < -500:  # Swipe rápido a la izquierda
             # Ir a Amenidades
             from amenidades import AmenidadesVista

@@ -102,8 +102,9 @@ class Homevista:
                 PagosVista(self.page, self.controlador.api_client)
             elif selected_index == 3:
                 # Perfil
-                print("Navegando a Perfil")
-                # TODO: Implementar navegación a perfil
+                from perfil import PerfilVista
+                self.page.clean()
+                PerfilVista(self.page, self.controlador.api_client)
 
         # Header con saludo y notificaciones
         header = ft.Container(

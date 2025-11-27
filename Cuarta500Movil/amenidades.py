@@ -38,6 +38,11 @@ class AmenidadesVista:
                 tab_disponibles.bgcolor = "white"
                 tab_mis_reservas.bgcolor = "grey200"
             
+            # Si cambiamos a "Mis Reservas", recargar las reservas
+            if tab == "mis_reservas":
+                print("Recargando reservas al cambiar de tab...")
+                self.cargar_reservas()
+            
             # Actualizar contenido
             contenido_column.controls.clear()
             
@@ -95,7 +100,10 @@ class AmenidadesVista:
                 self.page.clean()
                 PagosVista(self.page, self.controlador.api_client)
             elif selected_index == 3:
-                print("Navegando a Perfil")
+                # Perfil
+                from perfil import PerfilVista
+                self.page.clean()
+                PerfilVista(self.page, self.controlador.api_client)
 
         # Cargar datos
         self.cargar_amenidades()
@@ -468,6 +476,7 @@ class AmenidadesVista:
         total = reserva.get('total', 0)
         estado = reserva.get('estado', 'pendiente')
         estado_pago = reserva.get('estado_pago', 'pendiente')
+        servicios_extra = reserva.get('servicios_extra', [])
         
         # Formatear fecha
         fecha_formateada = fecha_evento
@@ -488,52 +497,117 @@ class AmenidadesVista:
         except:
             pass
 
-        card = ft.Container(
-            content=ft.Column([
-                ft.Row([
-                    ft.Icon(ft.Icons.CALENDAR_TODAY, color="teal600", size=24),
-                    ft.Column([
-                        ft.Text(
-                            nombre_residente,
-                            size=16,
-                            weight="bold",
-                            color="grey900"
-                        ),
-                        ft.Text(
-                            f"Fecha: {fecha_formateada}",
-                            size=14,
-                            color="grey600"
-                        ),
-                    ], spacing=2, expand=True),
-                    ft.Container(
-                        content=ft.Text(
-                            estado.upper(),
-                            size=12,
-                            weight="w500",
-                            color="white"
-                        ),
-                        bgcolor="green600" if estado == "confirmada" else "orange600" if estado == "pendiente" else "red600",
-                        padding=ft.padding.symmetric(horizontal=10, vertical=5),
-                        border_radius=12,
-                    ),
-                ], spacing=10),
-                ft.Divider(),
-                ft.Row([
-                    ft.Text("Total:", size=14, color="grey600"),
-                    ft.Container(expand=True),
+        # Calcular precio base y total de servicios extra
+        total_servicios_extra = sum(servicio.get('costo', 0) for servicio in servicios_extra)
+        precio_base = total - total_servicios_extra
+
+        # Construir contenido del card
+        contenido_card = [
+            ft.Row([
+                ft.Icon(ft.Icons.CALENDAR_TODAY, color="teal600", size=24),
+                ft.Column([
                     ft.Text(
-                        f"${total:,.0f}",
+                        nombre_residente,
                         size=16,
                         weight="bold",
                         color="grey900"
                     ),
-                ]),
-                ft.Text(
-                    f"Estado de pago: {estado_pago}",
-                    size=12,
-                    color="grey500"
+                    ft.Text(
+                        f"Fecha: {fecha_formateada}",
+                        size=14,
+                        color="grey600"
+                    ),
+                ], spacing=2, expand=True),
+                ft.Container(
+                    content=ft.Text(
+                        estado.upper(),
+                        size=12,
+                        weight="w500",
+                        color="white"
+                    ),
+                    bgcolor="green600" if estado == "confirmada" else "orange600" if estado == "pendiente" else "red600",
+                    padding=ft.padding.symmetric(horizontal=10, vertical=5),
+                    border_radius=12,
                 ),
             ], spacing=10),
+            ft.Divider(),
+        ]
+
+        # Agregar desglose de costos si hay servicios extra
+        if servicios_extra and len(servicios_extra) > 0:
+            # Mostrar precio base
+            contenido_card.append(
+                ft.Row([
+                    ft.Text("Costo base:", size=14, color="grey600"),
+                    ft.Container(expand=True),
+                    ft.Text(
+                        f"${precio_base:,.2f}",
+                        size=14,
+                        color="grey700"
+                    ),
+                ])
+            )
+            
+            # Mostrar cada servicio extra
+            contenido_card.append(
+                ft.Container(
+                    content=ft.Column([
+                        ft.Text("Servicios extra:", size=14, weight="w500", color="grey700"),
+                        ft.Column([
+                            ft.Row([
+                                ft.Text(f"• {servicio.get('nombre', 'Servicio')}", size=13, color="grey600", expand=True),
+                                ft.Text(
+                                    f"+ ${servicio.get('costo', 0):,.2f}",
+                                    size=13,
+                                    color="teal600",
+                                    weight="w500"
+                                ),
+                            ], spacing=5)
+                            for servicio in servicios_extra
+                        ], spacing=4),
+                    ], spacing=6),
+                    padding=ft.padding.only(left=10, top=5, bottom=5),
+                    bgcolor="grey50",
+                    border_radius=8,
+                )
+            )
+        else:
+            # Si no hay servicios extra, mostrar mensaje
+            contenido_card.append(
+                ft.Text(
+                    "Sin servicios extra",
+                    size=12,
+                    color="grey500",
+                    italic=True
+                )
+            )
+
+        # Agregar total
+        contenido_card.append(ft.Divider())
+        contenido_card.append(
+            ft.Row([
+                ft.Text("Total:", size=16, weight="bold", color="grey900"),
+                ft.Container(expand=True),
+                ft.Text(
+                    f"${total:,.2f}",
+                    size=18,
+                    weight="bold",
+                    color="teal600"
+                ),
+            ])
+        )
+        
+        # Agregar estado de pago
+        contenido_card.append(
+            ft.Text(
+                f"Estado de pago: {estado_pago.upper()}",
+                size=12,
+                color="grey500"
+            )
+        )
+
+        card = ft.Container(
+            content=ft.Column(contenido_card, spacing=10),
             padding=20,
             margin=ft.margin.only(bottom=15),
             bgcolor="white",
@@ -565,13 +639,20 @@ class AmenidadesVista:
     def cargar_reservas(self):
         """Carga las reservas del usuario desde el backend"""
         try:
+            print("Cargando reservas desde el backend...")
             exito, reservas, mensaje = self.controlador.api_client.obtener_mis_reservas()
             if exito:
                 self.reservas = reservas
+                print(f"Reservas cargadas exitosamente: {len(reservas)} reservas encontradas")
+                if reservas:
+                    for reserva in reservas:
+                        print(f"  - Reserva ID: {reserva.get('reservacion_id')}, Fecha: {reserva.get('fecha_evento')}, Estado: {reserva.get('estado')}")
             else:
                 print(f"Error al cargar reservas: {mensaje}")
                 self.reservas = []
         except Exception as e:
             print(f"Error al cargar reservas: {e}")
+            import traceback
+            traceback.print_exc()
             self.reservas = []
 

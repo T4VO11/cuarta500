@@ -280,25 +280,55 @@ class ReservarVista:
                     mostrar_mensaje("No estás autenticado. Por favor inicia sesión.", "error")
                     return
 
+                # Asegurar que tenemos los datos del usuario actualizados
+                # Si no tenemos nombre o teléfono, intentar obtenerlos del backend
+                if (not self.nombre_usuario or self.nombre_usuario == "Usuario" or not self.telefono_usuario) and self.controlador.api_client:
+                    print("Obteniendo datos del usuario desde el backend...")
+                    try:
+                        exito, usuario_completo, mensaje = self.controlador.api_client.obtener_mi_perfil()
+                        if exito and usuario_completo:
+                            # Actualizar nombre
+                            nombre = usuario_completo.get('nombre', '')
+                            apellido_paterno = usuario_completo.get('apellido_paterno', '')
+                            apellido_materno = usuario_completo.get('apellido_materno', '')
+                            nombre_completo = ' '.join([nombre, apellido_paterno, apellido_materno]).strip()
+                            
+                            if nombre_completo:
+                                self.nombre_usuario = nombre_completo
+                            elif usuario_completo.get('username'):
+                                self.nombre_usuario = usuario_completo.get('username')
+                            
+                            # Actualizar teléfono
+                            telefono = usuario_completo.get('telefono', '')
+                            if telefono:
+                                self.telefono_usuario = telefono
+                    except Exception as ex:
+                        print(f"Error al obtener datos del usuario: {ex}")
+
+                # Validar que tenemos nombre y teléfono (requeridos por el backend)
+                if not self.nombre_usuario or self.nombre_usuario == "Usuario":
+                    mostrar_mensaje("No se pudo obtener el nombre del usuario. Por favor inicia sesión nuevamente.", "error")
+                    return
+                
+                if not self.telefono_usuario or not self.telefono_usuario.strip():
+                    mostrar_mensaje("No se pudo obtener el teléfono del usuario. Por favor completa tu perfil.", "error")
+                    return
+
                 # Calcular total
                 precio_base = self.amenidad.get('catalogo_detalle', {}).get('precio', 0)
                 total_servicios = sum(servicio['costo'] for servicio in self.servicios_extra)
                 total = precio_base + total_servicios
 
-                # Preparar datos de la reserva (incluir nombre y teléfono si están disponibles)
+                # Preparar datos de la reserva (el backend genera reservacion_id automáticamente)
                 reservacion_data = {
+                    "nombre_residente": self.nombre_usuario,
+                    "telefono": self.telefono_usuario,
                     "fecha_evento": fecha_iso,
                     "servicios_extra": self.servicios_extra,
                     "total": total,
                     "estado": "pendiente",
                     "estado_pago": "pendiente"
                 }
-                
-                # Incluir nombre y teléfono si están disponibles (el backend los usará si no los encuentra en la BD)
-                if self.nombre_usuario and self.nombre_usuario != "Usuario":
-                    reservacion_data["nombre_residente"] = self.nombre_usuario
-                if self.telefono_usuario:
-                    reservacion_data["telefono"] = self.telefono_usuario
 
                 print(f"Datos de reserva a enviar: {reservacion_data}")
 
@@ -307,14 +337,16 @@ class ReservarVista:
                 btn_crear.text = "Creando reserva..."
                 self.page.update()
 
-                # Crear reserva
+                # Crear reserva usando el endpoint /reservaciones/crear (para usuarios normales)
                 exito, data, mensaje = self.controlador.api_client.crear_reservacion(reservacion_data)
                 
                 print(f"Respuesta del servidor: exito={exito}, mensaje={mensaje}")
                 
                 if exito:
                     mostrar_mensaje("Reserva creada exitosamente", "exito")
+                    print(f"Reserva creada exitosamente. Datos: {data}")
                     # Volver a amenidades después de un momento
+                    # La vista de amenidades se recargará automáticamente y cargará las reservas
                     import threading
                     threading.Timer(1.5, lambda: volver_amenidades(None)).start()
                 else:
@@ -327,6 +359,9 @@ class ReservarVista:
                 import traceback
                 traceback.print_exc()
                 mostrar_mensaje(f"Error: {str(ex)}", "error")
+                btn_crear.disabled = False
+                btn_crear.text = "Crear Reserva"
+                self.page.update()
                 btn_crear.disabled = False
                 btn_crear.text = "Crear Reserva"
                 self.page.update()
