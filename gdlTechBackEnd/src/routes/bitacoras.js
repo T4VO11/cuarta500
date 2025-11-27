@@ -8,6 +8,10 @@ const createUploader = require('../../multerConfig');
 
 const upload = createUploader('bitacoras');
 
+// Ruta para usuarios normales: obtener historial de accesos (solo autenticación, sin requireAdmin)
+// IMPORTANTE: Esta ruta debe ir ANTES de /:id para que no la capture
+router.get('/mi-historial', authMiddleware, bitacorasController.miHistorial);
+
 // Rutas protegidas con autenticación de administrador
 router.get('/', authMiddleware, requireAdmin, bitacorasController.index);
 router.get('/:id', authMiddleware, requireAdmin, bitacorasController.show);

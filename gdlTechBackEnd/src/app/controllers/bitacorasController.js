@@ -226,3 +226,63 @@ exports.destroy = async (req, res) => {
         return JsonResponse.error(res, 'Error al eliminar bitácora', 500);
     }
 };
+
+// Endpoint para usuarios normales: obtener historial de accesos del usuario autenticado
+exports.miHistorial = async (req, res) => {
+    try {
+        // Obtener usuario_id del token JWT
+        const usuario_id = req.usuario?.usuario_id;
+        
+        if (!usuario_id) {
+            return JsonResponse.error(res, 'Usuario no identificado', 401);
+        }
+
+        const usuarioIdNum = Number(usuario_id);
+        
+        // Buscar bitácoras relacionadas con el usuario (accesos, invitaciones, etc.)
+        const bitacoras = await Bitacora.find({
+            $and: [
+                {
+                    $or: [
+                        { usuario_id: usuarioIdNum },
+                        { 'detalle_acceso.usuario_id': usuarioIdNum }
+                    ]
+                },
+                {
+                    condominio_id: 'C500'
+                },
+                {
+                    $or: [
+                        { tipo_registro: { $in: ['acceso_qr', 'invitacion', 'visita', 'acceso'] } },
+                        { 'detalle_acceso.codigo_acceso': { $exists: true, $ne: '' } }
+                    ]
+                }
+            ]
+        })
+        .sort({ fecha_hora: -1, registro_id: -1 })
+        .limit(100); // Limitar a los últimos 100 registros
+
+        const bitacorasConUrls = bitacoras.map(bitacora => {
+            const bitacoraObj = bitacora.toObject();
+            if (bitacoraObj.detalle_acceso?.imagen_ine_url) {
+                bitacoraObj.detalle_acceso.imagen_ine_url = buildImageUrl(req, bitacoraObj.detalle_acceso.imagen_ine_url);
+            }
+            return bitacoraObj;
+        });
+
+        if (req.query.encrypt === 'true') {
+            const responseData = {
+                estado: 'exito',
+                mensaje: 'Historial de accesos obtenido exitosamente',
+                data: bitacorasConUrls
+            };
+            const encryptedResponse = Encryption.encryptResponse(responseData);
+            return res.json(encryptedResponse);
+        }
+
+        return JsonResponse.success(res, bitacorasConUrls, 'Historial de accesos obtenido exitosamente');
+    } catch (error) {
+        console.error('Error en miHistorial:', error);
+        return JsonResponse.error(res, 'Error al obtener historial de accesos', 500);
+    }
+};
