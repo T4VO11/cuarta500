@@ -378,7 +378,7 @@ exports.login = async (req, res) => {
         const usuario = await Usuario.findOne({ username }).select('+password');
         
         if (!usuario) {
-            return JsonResponse.error(res, 'Credenciales incorrectas', 401);
+            return JsonResponse.error(res, 'Usuario no encontrado', 401);
         }
 
         // Verificar password
