@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const app = express();
 const path = require('path');
+const decryptionRequest = require('./src/middleware/decryptionRequest');
 const connectDB = require('./src/config/mongoose'); 
 // Conectar a MongoDB (no bloquea el inicio del servidor)
 connectDB().catch(err => {
@@ -30,6 +31,8 @@ app.use((req, res, next) => {
     console.log(`${req.method} ${req.path} - ${new Date().toISOString()}`);
     next();
 });
+
+app.use(decryptionRequest);
 
 // Rutas
 console.log('Cargando rutas...');

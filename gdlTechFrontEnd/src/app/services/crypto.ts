@@ -64,4 +64,44 @@ export class CryptoService {
       return null;
     }
   }
+
+  /**
+   * NUEVO: Cifra datos para enviarlos al servidor
+   * Genera formato: "IV_HEX:DATA_HEX" compatible con tu backend Node.js
+   */
+  encrypt(data: any): string {
+    try {
+      // 1. Preparar la data
+      const dataString = JSON.stringify(data);
+      
+      // 2. Generar IV aleatorio (16 bytes)
+      const iv = CryptoJS.lib.WordArray.random(16);
+      
+      // 3. Preparar la clave (32 bytes)
+      let keyString = this.secretKey;
+      if (keyString.length < 32) keyString = keyString.padEnd(32, '0');
+      if (keyString.length > 32) keyString = keyString.substring(0, 32);
+      const key = CryptoJS.enc.Utf8.parse(keyString);
+
+      // 4. Cifrar
+      const encrypted = CryptoJS.AES.encrypt(dataString, key, {
+        iv: iv,
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7
+      });
+
+      // 5. IMPORTANTE: El backend espera HEX, no Base64
+      // Convertimos el IV y el Ciphertext a Hexadecimal
+      const ivHex = iv.toString(CryptoJS.enc.Hex);
+      const encryptedHex = encrypted.ciphertext.toString(CryptoJS.enc.Hex);
+
+      // 6. Retornamos el formato "IV:DATA"
+      return ivHex + ':' + encryptedHex;
+
+    } catch (e) {
+      console.error("Error cifrando datos:", e);
+      return '';
+    }
+  }
+
 }

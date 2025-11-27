@@ -8,6 +8,7 @@ import { routes } from './app.routes';
 // Tus interceptores
 import { tokenInterceptor } from './interceptors/token-interceptor';
 import { DecryptionInterceptor } from './interceptors/decryption-interceptor'; // <--- Importamos el nuevo
+import { EncryptionInterceptor } from './interceptors/encryption-interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -20,6 +21,12 @@ export const appConfig: ApplicationConfig = {
       // Habilitamos el soporte para interceptores de clase (legacy)
       withInterceptorsFromDi() 
     ),
+
+    {
+        provide: HTTP_INTERCEPTORS,
+        useClass: EncryptionInterceptor, // <--- Este cifra lo que SALE
+        multi: true
+    },
 
     // Registramos el nuevo interceptor de clase aquí abajo
     {
