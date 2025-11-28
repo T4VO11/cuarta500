@@ -111,14 +111,14 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(port, () => {
-    console.log(`\n✅ Servidor corriendo en puerto ${port}`);
-    console.log(`✅ API disponible en http://localhost:${port}`);
-    console.log(`\n📋 Rutas disponibles:`);
-    console.log(`   POST   /usuarios/registrar`);
-    console.log(`   POST   /usuarios/login`);
-    console.log(`   GET    /usuarios`);
-    console.log(`   GET    /usuarios/:id`);
-    console.log(`   PUT    /usuarios/:id`);
-    console.log(`   DELETE /usuarios/:id`);
-    console.log(`\n🚀 Servidor listo para recibir peticiones\n`);
+    console.log(`\n Servidor corriendo en puerto ${port}`);
+    console.log(` API disponible en http://localhost:${port}`);
+    // console.log(`\n📋 Rutas disponibles:`);
+    // console.log(`   POST   /usuarios/registrar`);
+    // console.log(`   POST   /usuarios/login`);
+    // console.log(`   GET    /usuarios`);
+    // console.log(`   GET    /usuarios/:id`);
+    // console.log(`   PUT    /usuarios/:id`);
+    // console.log(`   DELETE /usuarios/:id`);
+    console.log(`\n Servidor listo para recibir peticiones\n`);
 });
