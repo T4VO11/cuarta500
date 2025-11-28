@@ -1,1 +1,48 @@
-<p>show works!</p>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <button class="btn btn-secondary" (click)="regresar()">
+            <i class="bi bi-arrow-left"></i> Regresar a Lista de Incidentes
+        </button>
+        <!-- Botón para editar -->
+        <!-- <a *ngIf="incidente" [routerLink]="['/main/incidentes/edit', incidente._id]" class="btn btn-warning">
+            <i class="bi bi-pencil-square"></i> Editar Incidente
+        </a> -->
+    </div>
+
+    <div *ngIf="isLoading" class="alert alert-info">Cargando detalles del incidente...</div>
+
+    <div *ngIf="incidente" class="card shadow-lg border-0 rounded-4">
+        <div class="card-header bg-dark text-white">
+            <h3 class="mb-0">Incidente #{{ incidente.incidente_id }}</h3>
+        </div>
+        <div class="card-body p-4">
+            
+            <div class="row">
+                <!-- Columna 1: Información Principal -->
+                <div class="col-md-6 border-end">
+                    <h4 class="text-primary">Detalle del Reporte</h4>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>Asunto:</strong> {{ incidente.asunto }}</li>
+                        <li class="list-group-item"><strong>Categoría:</strong> <span class="badge bg-secondary">{{ incidente.categoria }}</span></li>
+                        <li class="list-group-item"><strong>Estado:</strong> <span class="badge" [ngClass]="{'bg-danger': incidente.estado === 'reportado', 'bg-warning text-dark': incidente.estado === 'abierto', 'bg-success': incidente.estado === 'resuelto'}">{{ incidente.estado | titlecase }}</span></li>
+                    </ul>
+                </div>
+                
+                <!-- Columna 2: Fechas y Residente -->
+                <div class="col-md-6">
+                    <h4 class="text-primary">Datos de la Gestión</h4>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>Reportado por Usuario ID:</strong> {{ incidente.usuario_id }}</li>
+                        <li class="list-group-item"><strong>Casa Afectada:</strong> {{ incidente.numeroCasa }}</li>
+                        <li class="list-group-item"><strong>Fecha Reporte:</strong> {{ incidente.fecha_reporte | date: 'medium' }}</li>
+                        <li class="list-group-item"><strong>Última Actualización:</strong> {{ incidente.fecha_ultima_actualizacion | date: 'medium' }}</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h4 class="mt-4 border-bottom pb-2">Descripción Detallada</h4>
+            <p>{{ incidente.descripcion }}</p>
+
+        </div>
+    </div>
+</div>

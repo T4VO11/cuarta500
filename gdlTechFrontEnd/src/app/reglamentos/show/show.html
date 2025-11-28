@@ -1,1 +1,46 @@
-<p>show works!</p>
+<div class="container mt-4">
+
+    <div *ngIf="isLoading" class="alert alert-info">Cargando reglamento...</div>
+
+    <div *ngIf="reglamento" class="card shadow-lg border-0 rounded-4">
+        <div class="card-header bg-dark text-white">
+            <h3 class="mb-0">Reglamento: {{ reglamento.nombre }}</h3>
+        </div>
+        <div class="card-body p-4">
+            
+            <p class="text-muted">{{ reglamento.descripcion }}</p>
+
+            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+                
+                <!-- Botón de Descarga -->
+                <button class="btn btn-primary btn-lg" (click)="descargarPdf()">
+                    <i class="bi bi-download"></i> Descargar PDF
+                </button>
+
+                <!-- Botón de Edición (Solo para administradores) -->
+                <a [routerLink]="['/main/reglamentos', reglamentoId, 'edit']" class="btn btn-warning btn-lg">
+                    <i class="bi bi-pencil"></i> Actualizar Reglamento
+                </a>
+            </div>
+
+            <!-- Visor de PDF (iFrame) -->
+            <div class="ratio ratio-4x3 mt-4 shadow-sm border rounded">
+                <!-- Usamos una URL que el navegador puede manejar. -->
+                <iframe [src]="pdfUrl" 
+                title="Visor de Reglamento" 
+                type="application/pdf"
+                allowfullscreen>
+                    <!-- Fallback para navegadores que no soportan iframes o PDF -->
+                    <p class="text-center p-5">
+                        Tu navegador no soporta la previsualización de PDF. 
+                        <a [href]="reglamento.catalogo_detalle?.pdf_url" target="_blank">Haz clic aquí para descargarlo.</a>
+                    </p>
+                </iframe>
+            </div>
+
+        </div>
+        <div class="card-footer text-muted small">
+            Estado: {{ reglamento.estado | titlecase }} | ID en BD: {{ reglamento._id }}
+        </div>
+    </div>
+</div>

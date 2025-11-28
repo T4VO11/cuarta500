@@ -1,1 +1,48 @@
-<p>index incidentes works!</p>
+<h2 class="mb-4">Gestión de Incidentes y Reportes</h2>
+
+<div class="d-flex justify-content-end mb-3">
+    <!-- Botón para crear nuevo incidente -->
+    <a [routerLink]="['/main/incidentes/create']" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Nuevo Reporte
+    </a>
+</div>
+
+<div class="table-responsive shadow-sm">
+  <table class="table table-striped table-hover align-middle">
+    <thead>
+      <tr>
+        <th>ID Incidente</th>
+        <th>Asunto</th>
+        <th>Casa</th>
+        <th>Categoría</th>
+        <th>Estado</th>
+        <th>Fecha Reporte</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let incidente of incidentes">
+        <td>{{ incidente.incidente_id }}</td>
+        <td>{{ incidente.asunto }}</td>
+        <td>{{ incidente.numeroCasa }}</td>
+        <td>{{ incidente.categoria }}</td>
+        <td><span class="badge" [ngClass]="{'bg-danger': incidente.estado === 'reportado', 'bg-warning text-dark': incidente.estado === 'abierto', 'bg-success': incidente.estado === 'resuelto'}">{{ incidente.estado | titlecase }}</span></td>
+        <td>{{ incidente.fecha_reporte | date: 'shortDate' }}</td>
+        
+        <!-- Acciones -->
+        <td>
+            <!-- 1. Detalle (Show) -->
+            <a [routerLink]="['/main/incidentes', incidente._id]" class="btn btn-sm btn-secondary me-2">
+                Detalle
+            </a>
+            <!-- 2. Editar (Edit) -->
+            <a [routerLink]="['/main/incidentes', incidente._id, 'edit']" class="btn btn-sm btn-warning me-2">
+                Editar
+            </a>
+            <!-- 3. Eliminar (Delete) -->
+            <button class="btn btn-sm btn-danger" (click)="deleteIncidente(incidente._id)">Eliminar</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

@@ -15,10 +15,10 @@ import { AmenidadesShowComponent } from './amenidades/show/show';
 import { IndexComponent as BitacorasIndexComponent } from './bitacoras/index/index';
 import { CreateComponent as BitacorasCreateComponent } from './bitacoras/create/create';
 import { EditComponent as BitacorasEditComponent } from './bitacoras/edit/edit';
-import { ShowComponent as BitacorasShowComponent } from './bitacoras/show/show';
+import { BitacorasShowComponent } from './bitacoras/show/show';
 
 //  Componentes de incidentes 
-import { IndexComponent as IncidentesIndexComponent } from './incidentes/index/index';
+import { IncidentesIndexComponent } from './incidentes/index/index';
 import { CreateComponent as IncidentesCreateComponent } from './incidentes/create/create';
 import { EditComponent as IncidentesEditComponent } from './incidentes/edit/edit';
 import { ShowComponent as IncidentesShowComponent } from './incidentes/show/show';
@@ -37,10 +37,10 @@ import { ShowComponent as ListadoAdeudosShowComponent } from './listadoAdeudos/s
 
 //  Componentes de reglamentos
 
-import { IndexComponent as ReglamentosIndexComponent } from './reglamentos/index/index';
+//import { IndexComponent as ReglamentosIndexComponent } from './reglamentos/index/index';
 import { CreateComponent as ReglamentosCreateComponent } from './reglamentos/create/create';
-import { EditComponent as ReglamentosEditComponent } from './reglamentos/edit/edit';
-import { ShowComponent as ReglamentosShowComponent } from './reglamentos/show/show';
+import { ReglamentosEditComponent } from './reglamentos/edit/edit';
+import { ReglamentosShowComponent } from './reglamentos/show/show';
 
 // Componentes de reporteFinanzas
 import { IndexComponent as ReporteFinanzasIndexComponent } from './reporteFinanzas/index/index';
@@ -113,11 +113,16 @@ export const routes: Routes = [
         { path: 'listadoAdeudos/:id', component: ListadoAdeudosShowComponent }, 
 
       // Reglamentos
-        { path: 'reglamentos', component: ReglamentosIndexComponent }, 
+    { 
+            path: 'reglamentos', 
+            redirectTo: 'reglamentos/6910f476625ce8db61ec8f57', // ID de ejemplo del reglamento activo
+            pathMatch: 'full' 
+        },
         { path: 'reglamentos/create', component: ReglamentosCreateComponent }, 
         { path: 'reglamentos/:id/edit', component: ReglamentosEditComponent }, 
         { path: 'reglamentos/:id', component: ReglamentosShowComponent }, 
 
+        
       // reporteFinanzas
         { path: 'reporteFinanzas', component: ReporteFinanzasIndexComponent }, 
         { path: 'reporteFinanzas/create', component: ReporteFinanzasCreateComponent }, 

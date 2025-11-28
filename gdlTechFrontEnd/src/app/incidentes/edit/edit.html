@@ -1,1 +1,67 @@
-<p>edit works!</p>
+<div class="container mt-4">
+    <!-- Botón de Regreso -->
+    <button class="btn btn-secondary mb-4" (click)="regresar()">
+        <i class="bi bi-arrow-left"></i> Regresar a Lista de Incidentes
+    </button>
+
+    <div *ngIf="!incidenteForm._id" class="alert alert-info">Cargando datos del incidente...</div>
+
+    <div *ngIf="incidenteForm._id" class="card shadow-lg border-0 rounded-4">
+        <div class="card-header bg-warning text-dark">
+            <h3 class="mb-0">Editar Incidente #{{ incidenteForm.incidente_id }}</h3>
+        </div>
+        <div class="card-body p-4">
+            
+            <form (ngSubmit)="submitUpdate(incidenteFormRef)" #incidenteFormRef="ngForm">
+                
+                <div class="row g-3 mb-4">
+                    <div class="col-md-5">
+                        <label class="form-label">Asunto (*)</label>
+                        <input type="text" class="form-control" [(ngModel)]="incidenteForm.asunto" name="asunto" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Categoría (*)</label>
+                        <select class="form-control" [(ngModel)]="incidenteForm.categoria" name="categoria" required>
+                            <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">No. de Casa (*)</label>
+                        <input type="number" class="form-control" [(ngModel)]="incidenteForm.numeroCasa" name="numeroCasa" required>
+                    </div>
+                </div>
+                
+                <!-- 🚨 CAMBIO APLICADO: Ahora muestra el nombre de quien reporta (read-only) -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">Reportado por:</label>
+                        <!-- Muestra el nombre mapeado del Back-End. No se puede editar aquí. -->
+                        <input type="text" 
+                               class="form-control" 
+                               [ngModel]="incidenteForm.nombre_reporta" 
+                               name="nombre_reporta_display" 
+                               readonly>
+                        <div class="form-text">ID de Usuario: {{ incidenteForm.usuario_id }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Estado Actual</label>
+                        <select class="form-control" [(ngModel)]="incidenteForm.estado" name="estado" required>
+                            <option *ngFor="let est of estados" [value]="est">{{ est | titlecase }}</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Descripción (*)</label>
+                    <textarea class="form-control" rows="3" [(ngModel)]="incidenteForm.descripcion" name="descripcion" required></textarea>
+                </div>
+                
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-warning btn-lg" [disabled]="incidenteFormRef.invalid">
+                        <i class="bi bi-save"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
