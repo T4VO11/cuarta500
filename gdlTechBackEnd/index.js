@@ -5,13 +5,36 @@ const app = express();
 const path = require('path');
 const decryptionRequest = require('./src/middleware/decryptionRequest');
 const connectDB = require('./src/config/mongoose'); 
-// Conectar a MongoDB (no bloquea el inicio del servidor)
-connectDB().catch(err => {
-    console.warn('⚠️  MongoDB no disponible, pero el servidor continuará');
+const initialSync = require('./src/sync/initialSync');      //Instala datos base si es un nuevo dispositivo
+const startSyncWorker = require('./src/sync/syncWorker');    // Mantiene la sincronizacion continua
+
+// Importamos las conexiones (atlas/local) para inicializar 
+const localConn = require('./src/config/localConnection');
+const atlasConn = require('./src/config/atlasConnection');
+
+console.log('initialSync type: ', typeof initialSync);
+//Ejecutamos initialSync y worker despues de dar un tiempo para la conexión
+(async () => {
+    await new Promise(r => setTimeout(r, 1500));
+    
+    //Sincronizacion inicial (Atlas a Local)
+    initialSync().catch(err => console.error('initialSync fallo: ', err));
+
+    //Iniciamos el worker continuo
+    startSyncWorker();
+})();
+
+connectDB().then(() => {
+    console.log("Conexion establecida.");
+
+}).catch(err => {
+    console.warn(`⚠️  MongoDB no disponible, pero el servidor continuará en modo offline.`);
 });
 
+//Arrancamos el servidor
 const port = process.env.PORT || 3000;
 const cors = require('cors');
+const { setDefaultAutoSelectFamilyAttemptTimeout } = require('net');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -69,7 +92,7 @@ try {
     app.use('/reservaciones', rutasReservaciones);
     console.log('✓ Todas las rutas registradas');
 } catch (error) {
-    console.error('❌ Error al cargar rutas:', error);
+    console.error(`❌ Error al cargar rutas:`, error);
     process.exit(1);
 }
 

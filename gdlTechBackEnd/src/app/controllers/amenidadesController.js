@@ -1,13 +1,19 @@
-const Amenidad = require('../../models/Amenidad');
+const LocalAmenidad = require('../../models/local/Amenidad');
+const AtlasAmenidad = require('../../models/atlas/Amenidad');
+
 const JsonResponse = require('../../utils/JsonResponse');
 const Encryption = require('../../utils/encryption');
 const mongoose = require('mongoose');
 const { buildImageUrls } = require('../../utils/imageUrlHelper');
 
+const createDualWriter = require('../../utils/dualWriter')
+const amenidadDW = createDualWriter(LocalAmenidad, AtlasAmenidad);
+
+// ------------READS (index, show, disponibles usaran local. Más rápido y offline).
 exports.index = async (req, res) => {
     try {
         console.log('index ');
-        const amenidades = await Amenidad.find({ condominio_id: 'C500' })
+        const amenidades = await LocalAmenidad.find({ condominio_id: 'C500' })
             .sort({ amenidad_id: 1 });
 
         // Construir URLs públicas para imágenes de galería
@@ -43,7 +49,7 @@ exports.show = async (req, res) => {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const amenidad = await Amenidad.findById(req.params.id);
+        const amenidad = await LocalAmenidad.findById(req.params.id);
 
         if (!amenidad) {
             return JsonResponse.notFound(res, 'Amenidad no encontrada');
@@ -71,39 +77,30 @@ exports.show = async (req, res) => {
     }
 };
 
+// ------------ CREATE (usando dualWriter) ------------ 
 exports.store = async (req, res) => {
     try {
-      
         const {
-            amenidad_id,
-            tipo,
-            nombre,
-            descripcion,
-            estado,
-            espacio_ref_id,
-            usuario_id,
-            motivo,
-            catalogo_detalle,
-            reglas_apartado,
-            transaccion_detalle
+            amenidad_id, tipo, nombre, descripcion, estado,espacio_ref_id,
+            usuario_id, motivo, catalogo_detalle, reglas_apartado, transaccion_detalle
         } = req.body;
 
-        const amenidadExistente = await Amenidad.findOne({ amenidad_id });
+        // Comprobación en local para amenidad_id único
+        const amenidadExistente = await LocalAmenidad.findOne({ amenidad_id });
         if (amenidadExistente) {
-            return JsonResponse.error(res, 'El amenidad_id ya existe', 400);
+            return JsonResponse.error(res, "El 'amenidad_id' ya existe", 400);
         }
 
         // Manejar archivos de galería si se suben
         let reglasApartadoData = reglas_apartado ? (typeof reglas_apartado === 'string' ? JSON.parse(reglas_apartado) : reglas_apartado) : {};
-console.log('save req.files:', req.files);
-console.log('save req.files.galeria:', req.files.galeria);
         if (req.files && req.files.galeria) {
-  reglasApartadoData.galeria_urls = req.files.galeria.map(
-    file => `uploads/amenidades/${file.filename}`
-  );
+            reglasApartadoData.galeria_urls = req.files.galeria.map(
+                file => `uploads/amenidades/${file.filename}`
+            );
         }
 
-        const nuevaAmenidad = new Amenidad({
+        // Construimos un objeto plano, en lugar de la instancia Mongoose
+        const payload = {
             amenidad_id,
             condominio_id: 'C500',
             tipo,
@@ -116,15 +113,16 @@ console.log('save req.files.galeria:', req.files.galeria);
             catalogo_detalle: catalogo_detalle ? (typeof catalogo_detalle === 'string' ? JSON.parse(catalogo_detalle) : catalogo_detalle) : {},
             reglas_apartado: reglasApartadoData,
             transaccion_detalle: transaccion_detalle ? (typeof transaccion_detalle === 'string' ? JSON.parse(transaccion_detalle) : transaccion_detalle) : {}
-        });
-console.log('Nueva Amenidad antes de guardar:', nuevaAmenidad);
-        await nuevaAmenidad.save();
+        };
+        
+        // Usar dualWriter para crear en local e intentar en Atlas (en caso de fallas, encola)
+        const nuevaAmenidadLocal = await amenidadDW.create(payload);
 
-        const amenidadObj = nuevaAmenidad.toObject();
+        const amenidadObj = nuevaAmenidadLocal.toObject();
         if (amenidadObj.reglas_apartado?.galeria_urls) {
             amenidadObj.reglas_apartado.galeria_urls = buildImageUrls(req, amenidadObj.reglas_apartado.galeria_urls);
         }
-
+        
         return JsonResponse.success(res, amenidadObj, 'Amenidad creada exitosamente', 201);
     } catch (error) {
         console.error('Error en store amenidad:', error);
@@ -135,118 +133,16 @@ console.log('Nueva Amenidad antes de guardar:', nuevaAmenidad);
     }
 };
 
-// exports.update = async (req, res) => {
-//     try {
-//         console.log('update ');
-//         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-//             return JsonResponse.error(res, 'ID inválido', 400);
-//         }
-
-//         const amenidad = await Amenidad.findById(req.params.id);
-//         if (!amenidad) {
-//             return JsonResponse.notFound(res, 'Amenidad no encontrada');
-//         }
-
-//         const {
-//             tipo,
-//             nombre,
-//             descripcion,
-//             estado,
-//             espacio_ref_id,
-//             usuario_id,
-//             motivo,
-//             catalogo_detalle,
-//             reglas_apartado,
-//             transaccion_detalle
-//         } = req.body;
-
-//         // Manejar archivos de galería si se suben
-//        if (req.files && req.files.length > 0) { // Comprobar si hay archivos subidos
-    
-//     // Asumimos que todos los archivos en req.files son de la galería
-//     const nuevasUrls = req.files.map(
-//     file => `uploads/amenidades/${file.filename}`
-//         );
-//     // Verificamos si reglas_apartado existe y concatenamos
-//     if (amenidad.reglas_apartado) {
-//         // Concatenar las URLs viejas con las nuevas (las viejas están en amenidad.reglas_apartado.galeria_urls)
-//         amenidad.reglas_apartado.galeria_urls = [
-//             ...(amenidad.reglas_apartado.galeria_urls || []),
-//             ...nuevasUrls
-//         ];
-//     } else {
-//         // Si reglas_apartado no existe, lo inicializamos con la galería
-//         amenidad.reglas_apartado = { galeria_urls: nuevasUrls };
-//     }
-// }
-
-//         if (tipo) amenidad.tipo = tipo;
-//         if (nombre) amenidad.nombre = nombre;
-//         if (descripcion !== undefined) amenidad.descripcion = descripcion;
-//         if (estado) amenidad.estado = estado;
-//         if (motivo !== undefined) amenidad.motivo = motivo;
-//         if (espacio_ref_id !== undefined && espacio_ref_id !== null) { 
-//             amenidad.espacio_ref_id = espacio_ref_id;
-//             }
-//         if (usuario_id !== undefined && usuario_id !== null) {
-//             amenidad.usuario_id = usuario_id;
-//             }
-//         if (catalogo_detalle) {
-//             try {
-//                 amenidad.catalogo_detalle = { ...amenidad.catalogo_detalle, ...JSON.parse(catalogo_detalle) };
-//             } catch {
-//                 amenidad.catalogo_detalle = { ...amenidad.catalogo_detalle, ...catalogo_detalle };
-//             }
-//         }
-//         if (reglas_apartado) {
-//             try {
-//                 const reglasData = typeof reglas_apartado === 'string' ? JSON.parse(reglas_apartado) : reglas_apartado;
-//                 Object.assign(amenidad.reglas_apartado, reglasData);
-//             } catch {
-//                 amenidad.reglas_apartado = { ...amenidad.reglas_apartado, ...reglas_apartado };
-//             }
-//         }
-//         if (transaccion_detalle) {
-//             try {
-//                 const transaccionData = typeof transaccion_detalle === 'string' ? JSON.parse(transaccion_detalle) : transaccion_detalle;
-//                 amenidad.transaccion_detalle = { ...amenidad.transaccion_detalle, ...transaccionData };
-//             } catch {
-//                 amenidad.transaccion_detalle = { ...amenidad.transaccion_detalle, ...transaccion_detalle };
-//             }
-//         }
-// console.log('Amenidad antes de guardar:', amenidad);
-//         await amenidad.save();
-
-//         const amenidadObj = amenidad.toObject();
-//         if (amenidadObj.reglas_apartado?.galeria_urls) {
-//             amenidadObj.reglas_apartado.galeria_urls = buildImageUrls(req, amenidadObj.reglas_apartado.galeria_urls);
-//         }
-
-//         // if (req.query.encrypt === 'true') {
-//         //     const responseData = {
-//         //         estado: 'exito',
-//         //         mensaje: 'Amenidad actualizada exitosamente',
-//         //         data: amenidadObj
-//         //     };
-//         //     const encryptedResponse = Encryption.encryptResponse(responseData);
-//         //     return res.json(encryptedResponse);
-//         // }
-
-//         return JsonResponse.success(res, amenidadObj, 'Amenidad actualizada exitosamente');
-//     } catch (error) {
-//         console.error('Error en update amenidad:', error);
-//         return JsonResponse.error(res, 'Error al actualizar amenidad', 500);
-//     }
-// };
-
+// ------------ UPDATE (usa dualWriter) ------------ 
 exports.update = async (req, res) => {
     try {
-        console.log('update ');
+        console.log('update');
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const amenidad = await Amenidad.findById(req.params.id);
+        //Obtener el documento local actual para manejar merge de galeria
+        const amenidad = await LocalAmenidad.findById(req.params.id);
         if (!amenidad) {
             return JsonResponse.notFound(res, 'Amenidad no encontrada');
         }
@@ -257,106 +153,82 @@ exports.update = async (req, res) => {
             transaccion_detalle
         } = req.body;
 
-        // ---------------------------------------------------------
-        // PASO 1: ACTUALIZAR DATOS DE TEXTO/JSON (PRIMERO)
-        // ---------------------------------------------------------
+        // Preparamos updates para actualizar con dualWrite
+        const updates = {};
         
-        if (tipo) amenidad.tipo = tipo;
-        if (nombre) amenidad.nombre = nombre;
-        if (descripcion !== undefined) amenidad.descripcion = descripcion;
-        if (estado) amenidad.estado = estado;
-        if (motivo !== undefined) amenidad.motivo = motivo;
-        if (espacio_ref_id !== undefined && espacio_ref_id !== null) amenidad.espacio_ref_id = espacio_ref_id;
-        if (usuario_id !== undefined && usuario_id !== null) amenidad.usuario_id = usuario_id;
-
-        // Procesar JSON strings de FormData
-        if (catalogo_detalle) {
+        // Actualizamos campos simples
+        if (tipo !== undefined) updates.tipo = tipo;
+        if (nombre !== undefined) updates.nombre = nombre;
+        if (descripcion !== undefined) updates.descripcion = descripcion;
+        if (estado !== undefined) updates.estado = estado;
+        if (motivo !== undefined) updates.motivo = motivo;
+        if (espacio_ref_id !== undefined) updates.espacio_ref_id = espacio_ref_id;
+        if (usuario_id !== undefined) updates.usuario_id = usuario_id;
+        
+        // Merge de catalogo_detalle (Mantiene lo existente y agrega lo nuevo)
+        if (catalogo_detalle !== undefined) {
+            let parsedDed = {};
             try {
-                const detData = typeof catalogo_detalle === 'string' ? JSON.parse(catalogo_detalle) : catalogo_detalle;
-                amenidad.catalogo_detalle = { ...amenidad.catalogo_detalle, ...detData };
-            } catch (e) { console.error('Error parseando catalogo', e); }
-        }
-
-        if (transaccion_detalle) {
-            try {
-                const transData = typeof transaccion_detalle === 'string' ? JSON.parse(transaccion_detalle) : transaccion_detalle;
-                amenidad.transaccion_detalle = { ...amenidad.transaccion_detalle, ...transData };
-            } catch (e) { console.error('Error parseando transaccion', e); }
-        }
-
-        if (reglas_apartado) {
-            try {
-                const reglasData = typeof reglas_apartado === 'string' ? JSON.parse(reglas_apartado) : reglas_apartado;
-                
-                // IMPORTANTE: Mongoose detecta mejor los cambios si asignas propiedades específicas
-                // o usas un merge cuidadoso.
-                
-                // Si reglasData trae extras_disponibles, los actualizamos
-                if (reglasData.extras_disponibles) {
-                    // Inicializamos si no existe
-                    if (!amenidad.reglas_apartado) amenidad.reglas_apartado = {};
-                    amenidad.reglas_apartado.extras_disponibles = reglasData.extras_disponibles;
-                }
-                
-                // Actualizamos otros campos simples de reglas_apartado sin borrar la galeria
-                // Hacemos un loop para no borrar 'galeria_urls' si no viene en el JSON
-                for (const key in reglasData) {
-                    if (key !== 'galeria_urls') { // Protegemos la galería del JSON entrante
-                        if (!amenidad.reglas_apartado) amenidad.reglas_apartado = {};
-                        amenidad.reglas_apartado[key] = reglasData[key];
-                    }
-                }
-            } catch (e) { 
-                console.error('Error parseando reglas_apartado', e);
+                parseDet = typeof catalogo_detalle === 'string' ? JSON.parse(catalogo_detalle) : catalogo_detalle;
+            } catch (e) { parsedDet = catalogo_detalle; }
+            updates.catalogo_detalle = { ...(amenidad.catalogo_detalle || {}), ...parsedDet };
             }
-        }
-
-        // ---------------------------------------------------------
-        // PASO 2: AGREGAR IMÁGENES NUEVAS (AL FINAL)
-        // ---------------------------------------------------------
-        if (req.files && req.files.length > 0) { 
-            const nuevasUrls = req.files.map(file => `uploads/amenidades/${file.filename}`);
             
-            if (amenidad.reglas_apartado) {
-                // Agregar al array existente
-                amenidad.reglas_apartado.galeria_urls = [
-                    ...(amenidad.reglas_apartado.galeria_urls || []),
-                    ...nuevasUrls
-                ];
-            } else {
-                // Crear si no existe
-                amenidad.reglas_apartado = { galeria_urls: nuevasUrls };
-            }
+        // Merge de transaccion_detalle
+        if (transaccion_detalle !== undefined) {
+            let parsedTrans = {};
+            try {
+                parsedTrans = typeof transaccion_detalle === 'string' ? JSON.parse(transaccion_detalle) : transaccion_detalle;
+            } catch (e) { parsedTrans = transaccion_detalle; }
+            updates.transaccion_detalle = { ...(amenidad.transaccion_detalle || {}), ...parsedTrans}
         }
 
-        console.log('Amenidad antes de guardar (Update):', amenidad);
-        await amenidad.save();
+        // Merge de reglas_apartado (Texto/JSON en el body)
+        let reglasBody = {};
+        if (reglas_apartado !== undefined) {
+            try {
+                reglasBody= typeof reglas_apartado === 'string' ? JSON.parse(reglas_apartado) : reglas_apartado;
+            } catch (e) { reglasBody = reglas_apartado; }
+            }
 
-        // Construir URLs completas para la respuesta
-        const amenidadObj = amenidad.toObject();
+        updates.reglas_apartado = { ...(amenidad.reglas_apartado?.toObject() || {}), ...reglasBody };
+
+        if (req.files && req.files.length > 0) {
+            const nuevasUrls = req.files.map(file => `ulpoads/amenudades/${file.filename}`);
+
+            updates.reglas_apartado.galeria_urls = [
+                ...(amenidad.reglas_apartado?.galeria_urls || []),
+                ...nuevasUrls
+            ];
+        }
+
+        // Usar dualWriter.update -> actualiza el local y encola/actualiza Atlas si falla
+        const updated = await amenidadDW.update(req.params.id, updates);
+
+        const amenidadObj = updated.toObject();
         if (amenidadObj.reglas_apartado?.galeria_urls) {
             amenidadObj.reglas_apartado.galeria_urls = buildImageUrls(req, amenidadObj.reglas_apartado.galeria_urls);
         }
-
-        return JsonResponse.success(res, amenidadObj, 'Amenidad actualizada exitosamente');
-    } catch (error) {
-        console.error('Error en update amenidad:', error);
-        return JsonResponse.error(res, 'Error al actualizar amenidad', 500);
-    }
+    return JsonResponse.success(res, amenidadObj, 'Amenidad actualizada exitosamente');
+  } catch (error) {
+    console.error('Error en update amenidad:', error);
+    return JsonResponse.error(res, 'Error al actualizar amenidad', 500);
+  }
 };
 
+// ------------ DELETE (usa dualWriter) ------------ 
 exports.destroy = async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const amenidad = await Amenidad.findById(req.params.id);
+        const amenidad = await LocalAmenidad.findById(req.params.id);
         if (!amenidad) {
             return JsonResponse.notFound(res, 'Amenidad no encontrada');
         }
 
-        await Amenidad.findByIdAndDelete(req.params.id);
+        await amenidadDW.delete(req.params.id);
 
         return JsonResponse.success(res, null, 'Amenidad eliminada exitosamente');
     } catch (error) {
@@ -365,12 +237,12 @@ exports.destroy = async (req, res) => {
     }
 };
 
-// Endpoint para usuarios normales: obtener amenidades disponibles
+// ------------ Endpoint para usuarios normales: GET disponibles (READ) ------------ 
 exports.disponibles = async (req, res) => {
     try {
         // Obtener todas las amenidades del condominio (sin filtrar por estado)
         // El frontend puede decidir qué mostrar
-        const amenidades = await Amenidad.find({ 
+        const amenidades = await LocalAmenidad.find({ 
             condominio_id: 'C500'
         })
         .sort({ amenidad_id: 1 });
