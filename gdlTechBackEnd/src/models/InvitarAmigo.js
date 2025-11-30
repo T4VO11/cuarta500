@@ -5,7 +5,7 @@ const { Schema } = mongoose;
  * Modelo de InvitarAmigo según el esquema de la base de datos
  */
 const InvitarAmigoSchema = new Schema({
-    invitacion_id: { 
+    invitacion_id: {
         type: Number, 
         required: true, 
         unique: true 
