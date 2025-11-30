@@ -6,6 +6,7 @@ class Splashvista:
     def __init__(self, page: ft.Page):
         self.page = page
         self.page.title = "Bienvenido"
+        self.page.bgcolor = "white"  # Fondo blanco consistente
         self.page.fonts = {
             "Cinzel": "https://raw.githubusercontent.com/google/fonts/main/ofl/cinzel/Cinzel-Regular.ttf"
         }
@@ -15,6 +16,7 @@ class Splashvista:
         self.page.window.width = 411
         self.page.window.height = 831
         self.page.window.resizable = False
+        self.page.window.bgcolor = "white"  # Fondo de ventana blanco
         self.page.clean()
         self.build()
 

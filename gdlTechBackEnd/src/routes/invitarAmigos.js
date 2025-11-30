@@ -7,12 +7,15 @@ const { requireAdmin } = require('../middleware/role.middleware');
 
 // Rutas protegidas con autenticaciOn de administrador
 router.get('/', authMiddleware, requireAdmin, invitarAmigosController.index);
-router.get('/:id', authMiddleware, requireAdmin, invitarAmigosController.show);
 router.post('/', authMiddleware, requireAdmin, validarInvitarAmigo, invitarAmigosController.store);
+
+// Rutas para usuarios autenticados (sin requerir admin) - DEBEN IR ANTES de /:id
+router.post('/crear', authMiddleware, validarInvitarAmigo, invitarAmigosController.store);
+router.get('/mis-invitaciones', authMiddleware, invitarAmigosController.misInvitaciones);
+
+// Rutas protegidas con autenticaciOn de administrador (con parámetros)
+router.get('/:id', authMiddleware, requireAdmin, invitarAmigosController.show);
 router.put('/:id', authMiddleware, requireAdmin, validarInvitarAmigo, invitarAmigosController.update);
 router.delete('/:id', authMiddleware, requireAdmin, invitarAmigosController.destroy);
-
-// Ruta alternativa para usuarios autenticados (sin requerir admin) - para crear invitaciones
-router.post('/crear', authMiddleware, validarInvitarAmigo, invitarAmigosController.store);
 
 module.exports = router;

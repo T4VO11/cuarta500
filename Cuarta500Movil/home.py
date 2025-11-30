@@ -67,10 +67,10 @@ class Homevista:
             print(f"Error al verificar saldo pendiente: {e}")
 
         def generar_acceso_qr(e):
-            """Navega a la pantalla de generar QR"""
-            from invitar_amigo import InvitarAmigoVista
+            """Navega a la pantalla de opciones de generación de QR"""
+            from opciones_qr import OpcionesQRVista
             self.page.clean()
-            InvitarAmigoVista(self.page, self.controlador.api_client)
+            OpcionesQRVista(self.page, self.controlador.api_client)
 
         def pagar_administracion(e):
             """Navega a la pantalla de pagos"""

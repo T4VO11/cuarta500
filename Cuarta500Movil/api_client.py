@@ -309,17 +309,24 @@ class ApiClient:
     
     def crear_invitacion(self, invitacion_data):
         """Crear invitación - POST /invitarAmigos/crear (para usuarios normales)"""
+        print(f"API Client - Enviando invitación: {invitacion_data}")
         # Intentar primero con la ruta para usuarios normales
         response, status_code = self._make_request('POST', '/invitarAmigos/crear', data=invitacion_data)
+        print(f"API Client - Respuesta ruta /crear: status={status_code}, response={response}")
         
         # Si falla, intentar con la ruta de admin (por compatibilidad)
         if status_code not in [200, 201]:
+            print(f"API Client - Primera ruta falló, intentando con /invitarAmigos")
             response, status_code = self._make_request('POST', '/invitarAmigos', data=invitacion_data)
+            print(f"API Client - Respuesta ruta /invitarAmigos: status={status_code}, response={response}")
         
         if status_code in [200, 201] and response.get('estado') == 'exito':
+            print(f"API Client - Invitación creada exitosamente: {response.get('data')}")
             return True, response.get('data'), response.get('mensaje')
         
-        return False, None, response.get('mensaje', 'Error al crear invitación')
+        error_msg = response.get('mensaje', 'Error al crear invitación')
+        print(f"API Client - Error al crear invitación: {error_msg}")
+        return False, None, error_msg
     
     def actualizar_invitacion(self, invitacion_id, invitacion_data):
         """Actualizar invitación - PUT /invitarAmigos/:id"""
@@ -338,6 +345,16 @@ class ApiClient:
             return True, response.get('mensaje')
         
         return False, response.get('mensaje', 'Error al eliminar invitación')
+    
+    def obtener_mis_invitaciones(self, encrypt=False):
+        """Obtener invitaciones del usuario actual - GET /invitarAmigos/mis-invitaciones"""
+        params = {'encrypt': 'true'} if encrypt else None
+        response, status_code = self._make_request('GET', '/invitarAmigos/mis-invitaciones', params=params)
+        
+        if status_code == 200 and response.get('estado') == 'exito':
+            return True, response.get('data', []), response.get('mensaje')
+        
+        return False, [], response.get('mensaje', 'Error al obtener invitaciones')
     
     # ========== ADEUDOS/PAGOS ==========
     def obtener_mis_adeudos(self, encrypt=False):

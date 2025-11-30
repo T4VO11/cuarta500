@@ -5,10 +5,12 @@ class Loginvista:
     def __init__(self, page: ft.Page):
         self.page = page
         self.page.title = "Login"
+        self.page.bgcolor = "white"  # Fondo blanco consistente
         self.page.vertical_alignment = ft.MainAxisAlignment.CENTER
         self.page.window.width = 411
         self.page.window.height = 831
         self.page.window.resizable = False
+        self.page.window.bgcolor = "white"  # Fondo de ventana blanco
         self.page.clean()
         self.controlador = Controlador(page)
         self.build()

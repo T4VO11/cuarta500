@@ -333,7 +333,7 @@ class PerfilVista:
                 ),
             ],
             on_change=on_navigation_change,
-            bgcolor="#F5F5DC",
+            bgcolor="grey100",
             selected_index=3,
             indicator_color="teal600",
         )
