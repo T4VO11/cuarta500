@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth-guard'; 
+import { roleGuard } from './guards/role-guard';
+import { DashboardRedirectComponent } from './main/dashboard-redirect/dashboard-redirect';
 
 //  Componentes de Layout y Login
 import { IndexComponent as LoginComponent } from './login/index/index';
@@ -66,92 +68,183 @@ export const routes: Routes = [
   // RUTA PÚBLICA: LOGIN
   { path: 'login/index', component: LoginComponent },
 
-  // Ruta por defecto: redirige a /main
-  { path: '', redirectTo: 'main', pathMatch: 'full' },
+  // Redirección inicial (Opcional: podrías mandarlo al login si está vacío)
+  { path: '', redirectTo: 'login/index', pathMatch: 'full' },
   
   {
     path: 'main', 
     component: MainComponent, 
-    canActivate: [authGuard], // Aplica la protección a todas las rutas hijas
+    canActivate: [authGuard], 
     children: [
-     
-      { path: '', component: ReporteFinanzasIndexComponent },
+      
+      // -----------------------------------------------------------
+      // 1. DASHBOARDS (Las rutas a las que redirige el Login)
+      // -----------------------------------------------------------
+      
+      // Dashboard ADMIN: Ve finanzas por defecto
+      { 
+        path: 'dashboard-admin', 
+        component: UsuariosIndexComponent, 
+        canActivate: [roleGuard],
+        data: { roles: ['administrador'] } 
+      },
 
-      // Amenidades 
-        { path: 'amenidades', children: [ // ⬅️ El prefijo es /main/amenidades
-        { path: 'create', component: AmenidadesCreateComponent }, 
-        { path: 'reservar/:id', component: CreateComponent }, 
-        { path: 'edit/:id', component: AmenidadesEditComponent }, 
-        { path: 'show/:id', component: AmenidadesShowComponent }, 
-        { path: '', component: AmenidadesIndexComponent }, 
-      ]},
+      // Dashboard GUARDIA: Ve bitácoras por defecto
+      { 
+        path: 'panel-guardia', 
+        component: BitacorasIndexComponent, 
+        canActivate: [roleGuard],
+        data: { roles: ['guardia', 'administrador'] } 
+      },
+
+      // Dashboard RESIDENTE: Ve amenidades o avisos por defecto
+      { 
+        path: 'home-residente', 
+        component: AmenidadesIndexComponent, 
+        canActivate: [roleGuard],
+        data: { roles: ['dueño', 'administrador'] } 
+      },
 
 
+      // -----------------------------------------------------------
+      // 2. MÓDULOS SENSIBLES (SOLO ADMINISTRADOR)
+      // -----------------------------------------------------------
+      
+      // USUARIOS: Solo el admin puede gestionar gente
+      { 
+         path: 'usuarios', 
+         canActivate: [roleGuard],
+         data: { roles: ['administrador'] }, // <--- CANDADO
+         children: [
+            { path: '', component: UsuariosIndexComponent },
+            { path: 'create', component: UsuariosCreateComponent },
+            { path: ':id/edit', component: UsuariosEditComponent },
+            { path: ':id', component: ShowUsuarioComponent }
+         ]
+      },
 
-      //  Bitacoras
-        { path: 'bitacoras', component: BitacorasIndexComponent }, 
-        { path: 'bitacoras/create', component: BitacorasCreateComponent }, 
-        { path: 'bitacoras/:id/edit', component: BitacorasEditComponent }, 
-        { path: 'bitacoras/:id', component: BitacorasShowComponent },         
+      // FINANZAS: Solo el admin ve el dinero
+      { 
+         path: 'reporteFinanzas',
+         canActivate: [roleGuard],
+         data: { roles: ['administrador', 'dueño'] }, // <--- CANDADO
+         children: [
+            { path: '', component: ReporteFinanzasIndexComponent },
+            { path: 'create', component: ReporteFinanzasCreateComponent },
+            { path: ':id/edit', component: ReporteFinanzasEditComponent },
+            { path: ':id', component: ReporteFinanzasShowComponent }
+         ]
+      },
 
-      // Incidentes
-        { path: 'incidentes', component: IncidentesIndexComponent }, 
-        { path: 'incidentes/create', component: IncidentesCreateComponent }, 
-        { path: 'incidentes/:id/edit', component: IncidentesEditComponent }, 
-        { path: 'incidentes/:id', component: IncidentesShowComponent },
+      // LISTADO ADEUDOS (Gestión global)
+      {
+         path: 'listadoAdeudos',
+         canActivate: [roleGuard],
+         data: { roles: ['administrador'] }, // Admin gestiona, Residente ve el suyo en 'mi-perfil' o ruta aparte
+         component: ListadoAdeudosIndexComponent
+         // ... agrega tus hijos create/edit aquí si es necesario
+      },
 
-      // InvitarAmigos
-        { path: 'invitarAmigos', component: InvitarAmigosIndexComponent }, 
-        { path: 'invitarAmigos/create', component: InvitarAmigosCreateComponent }, 
-        { path: 'invitarAmigos/:id/edit', component: InvitarAmigosEditComponent }, 
-        { path: 'invitarAmigos/:id', component: InvitarAmigosShowComponent },       
 
-      // ListadoAdeudos
-        { path: 'listadoAdeudos', component: ListadoAdeudosIndexComponent }, 
-        { path: 'listadoAdeudos/create', component: ListadoAdeudosCreateComponent }, 
-        { path: 'listadoAdeudos/:id/edit', component: ListadoAdeudosEditComponent }, 
-        { path: 'listadoAdeudos/:id', component: ListadoAdeudosShowComponent }, 
+      // -----------------------------------------------------------
+      // 3. MÓDULOS DE SEGURIDAD (ADMIN + GUARDIA)
+      // -----------------------------------------------------------
+      
+      // BITÁCORAS: El guardia registra entradas/salidas
+      { 
+         path: 'bitacoras',
+         canActivate: [roleGuard],
+         data: { roles: ['administrador', 'guardia'] }, // <--- CANDADO COMPARTIDO
+         children: [
+            { path: '', component: BitacorasIndexComponent },
+            { path: 'create', component: BitacorasCreateComponent },
+            { path: ':id/edit', component: BitacorasEditComponent },
+            { path: ':id', component: BitacorasShowComponent }
+         ]
+      },
 
-      // Reglamentos
-    { 
-            path: 'reglamentos', 
-            redirectTo: 'reglamentos/6910f476625ce8db61ec8f57', // ID de ejemplo del reglamento activo
-            pathMatch: 'full' 
-        },
-        { path: 'reglamentos/create', component: ReglamentosCreateComponent }, 
-        { path: 'reglamentos/:id/edit', component: ReglamentosEditComponent }, 
-        { path: 'reglamentos/:id', component: ReglamentosShowComponent }, 
 
-        
-      // reporteFinanzas
-        { path: 'reporteFinanzas', component: ReporteFinanzasIndexComponent }, 
-        { path: 'reporteFinanzas/create', component: ReporteFinanzasCreateComponent }, 
-        { path: 'reporteFinanzas/:id/edit', component: ReporteFinanzasEditComponent }, 
-        { path: 'reporteFinanzas/:id', component: ReporteFinanzasShowComponent }, 
+      // -----------------------------------------------------------
+      // 4. MÓDULOS SOCIALES (ADMIN + RESIDENTE)
+      // -----------------------------------------------------------
 
-      // // reservaciones
-      //   { path: 'reservaciones', component: ReservacionesIndexComponent }, 
-      //   { path: 'reservaciones/create', component: CreateComponent }, 
-      //   { path: 'reservaciones/:id/edit', component: ReservacionesEditComponent }, 
-      //   { path: 'reservaciones/:id', component: ReservacionesShowComponent }, 
+      // AMENIDADES: Residentes reservan
+      { 
+         path: 'amenidades',
+         canActivate: [roleGuard],
+         data: { roles: ['administrador', 'dueño'] },
+         children: [
+            { path: '', component: AmenidadesIndexComponent },
+            { path: 'create', component: AmenidadesCreateComponent }, // Quizás solo admin crea
+            { path: 'reservar/:id', component: CreateComponent }, 
+            { path: 'edit/:id', component: AmenidadesEditComponent }, 
+            { path: 'show/:id', component: AmenidadesShowComponent }
+         ]
+      },
 
-        // reservaciones
-        { path: 'reservaciones', children: [
-            { path: '', component: ReservacionesIndexComponent }, 
-            { path: 'reservaciones/create', component: CreateComponent }, 
-            { path: 'edit/:id', component: ReservacionesEditComponent }, 
-            { path: 'show/:id', component: ReservacionesShowComponent },
-        ]},
-        
-      // Usuarios
-        { path: 'usuarios', component: UsuariosIndexComponent }, 
-        { path: 'usuarios/create', component: UsuariosCreateComponent }, 
-        { path: 'usuarios/:id/edit', component: UsuariosEditComponent }, 
-        { path: 'usuarios/:id', component: ShowUsuarioComponent }, 
-  
+      // INVITAR AMIGOS
+      {
+         path: 'invitarAmigos',
+         canActivate: [roleGuard],
+         data: { roles: ['administrador', 'dueño'] },
+         children: [
+            { path: '', component: InvitarAmigosIndexComponent },
+            { path: 'create', component: InvitarAmigosCreateComponent },
+            { path: ':id/edit', component: InvitarAmigosEditComponent },
+            { path: ':id', component: InvitarAmigosShowComponent }
+         ]
+         // ... hijos
+      },
 
-        // Manejo del 404 
-        { path: '**', redirectTo: '/main', pathMatch: 'full' } // Redirige a la vista principal si no encuentra la ruta
+      // RESERVACIONES
+      {
+         path: 'reservaciones',
+         canActivate: [roleGuard],
+         data: { roles: ['administrador', 'dueño'] },
+         children: [
+             { path: '', component: ReservacionesIndexComponent }, 
+             { path: 'create', component: CreateComponent }, // Ojo con la importación de CreateComponent aquí
+             { path: 'edit/:id', component: ReservacionesEditComponent }, 
+             { path: 'show/:id', component: ReservacionesShowComponent },
+         ]
+      },
+
+
+      // -----------------------------------------------------------
+      // 5. MÓDULOS GENERALES (TODOS)
+      // -----------------------------------------------------------
+
+      // INCIDENTES: Todos pueden reportar algo roto
+      { 
+         path: 'incidentes',
+         canActivate: [roleGuard],
+         data: { roles: ['administrador', 'guardia', 'dueño'] },
+         children: [
+            { path: '', component: IncidentesIndexComponent },
+            { path: 'create', component: IncidentesCreateComponent },
+            { path: ':id/edit', component: IncidentesEditComponent },
+            { path: ':id', component: IncidentesShowComponent }
+         ]
+      },
+
+      // REGLAMENTOS: Todos deben poder leerlos
+      { 
+         path: 'reglamentos',
+         canActivate: [roleGuard],
+         data: { roles: ['administrador', 'guardia', 'dueño'] },
+         children: [
+             { path: '', redirectTo: 'show/6910f476625ce8db61ec8f57', pathMatch: 'full' }, // Ajusté ruta
+             { path: 'create', component: ReglamentosCreateComponent }, // Idealmente restringir create a Admin
+             { path: ':id/edit', component: ReglamentosEditComponent }, 
+             { path: ':id', component: ReglamentosShowComponent }
+         ]
+      },
+      
+      // Ruta por defecto interna (si alguien pone solo /main)
+      {path: '', component: DashboardRedirectComponent, pathMatch: 'full' }
     ] 
-  }
+  },
+
+  // Manejo del 404 global
+  { path: '**', redirectTo: 'login/index', pathMatch: 'full' }
 ];

@@ -32,7 +32,7 @@ const multerOptional = (req, res, next) => {
     }
 };
 
-router.post('/registrar', multerOptional, validarCrearUsuario, usuariosController.store);
+router.post('/registrar', authMiddleware, requireAdmin, multerOptional, validarCrearUsuario, usuariosController.store);
 
 // POST /usuarios/login - Login para obtener token
 router.post('/login', validarLogin, usuariosController.login);
