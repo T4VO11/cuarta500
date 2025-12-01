@@ -86,8 +86,6 @@ export const routes: Routes = [
         { path: '', component: AmenidadesIndexComponent }, 
       ]},
 
-
-
       //  Bitacoras
         { path: 'bitacoras', component: BitacorasIndexComponent }, 
         { path: 'bitacoras/create', component: BitacorasCreateComponent }, 
