@@ -1,1 +1,131 @@
-<p>edit works!</p>
+<div class="container mt-4">
+    <button class="btn btn-secondary mb-4" (click)="regresar()">
+        <i class="bi bi-arrow-left"></i> Regresar a Egresos
+    </button>
+    
+    <!-- Indicador de Carga -->
+    <div *ngIf="isLoading" class="text-center p-5">
+        <div class="spinner-border text-danger" role="status"></div>
+        <p class="mt-2">Cargando datos del egreso para edición...</p>
+    </div>
+
+    <!-- Formulario de Edición -->
+    <div *ngIf="!isLoading" class="card shadow-lg border-0 rounded-4">
+        <div class="card-header bg-warning text-dark">
+            <h3 class="mb-0"><i class="bi bi-pencil"></i> Editar Gasto (Egreso)</h3>
+        </div>
+        <div class="card-body p-4">
+            
+            <form #reporteFormulario="ngForm" (ngSubmit)="submitReporte(reporteFormulario)">
+                
+                <div class="row">
+                    <!-- Columna Izquierda: Campos principales -->
+                    <div class="col-md-6">
+                        
+                        <!-- Concepto -->
+                        <div class="mb-3">
+                            <label for="concepto" class="form-label fw-bold">Concepto / Título del Gasto <span class="text-danger">*</span></label>
+                            <input type="text" 
+                                   id="concepto" 
+                                   name="concepto" 
+                                   class="form-control" 
+                                   [(ngModel)]="reporteForm.concepto" 
+                                   required 
+                                   maxlength="100">
+                        </div>
+                        
+                        <!-- Monto -->
+                        <div class="mb-3">
+                            <label for="monto" class="form-label fw-bold">Monto ($ MXN) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" 
+                                       id="monto" 
+                                       name="monto" 
+                                       class="form-control" 
+                                       [(ngModel)]="reporteForm.monto" 
+                                       required 
+                                       min="0.01" 
+                                       step="0.01">
+                            </div>
+                        </div>
+
+                        <!-- Categoría -->
+                        <div class="mb-3">
+                            <label for="categoria" class="form-label fw-bold">Categoría <span class="text-danger">*</span></label>
+                            <select id="categoria" 
+                                    name="categoria" 
+                                    class="form-select" 
+                                    [(ngModel)]="reporteForm.categoria" 
+                                    required>
+                                <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
+                            </select>
+                        </div>
+                        
+                    </div>
+
+                    <!-- Columna Derecha: Fecha y Evidencia -->
+                    <div class="col-md-6">
+                        
+                        <!-- Fecha del Gasto -->
+                        <div class="mb-3">
+                            <label for="fecha" class="form-label fw-bold">Fecha en que se realizó el Gasto <span class="text-danger">*</span></label>
+                            <input type="date" 
+                                   id="fecha" 
+                                   name="fecha" 
+                                   class="form-control" 
+                                   [(ngModel)]="reporteForm.fecha" 
+                                   required>
+                        </div>
+
+                        <!-- Evidencia Actual -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold d-block">Evidencia Actual</label>
+                            <div *ngIf="reporteForm.current_imagen_url" class="p-2 border rounded text-center mb-2">
+                                <img [src]="reporteForm.current_imagen_url" alt="Evidencia Actual" class="img-fluid rounded" style="max-height: 100px; object-fit: contain;">
+                                <p class="small text-muted mt-1">{{ reporteForm.tipo_documento }}</p>
+                            </div>
+                            <div *ngIf="!reporteForm.current_imagen_url" class="alert alert-info py-2 small">No hay evidencia adjunta.</div>
+                        </div>
+                        
+                        <!-- Cargar Nueva Evidencia -->
+                        <div class="mb-3">
+                            <label for="nuevaEvidencia" class="form-label fw-bold">Cargar Nueva Evidencia (Opcional)</label>
+                            <input class="form-control" 
+                                   type="file" 
+                                   id="nuevaEvidencia" 
+                                   name="nuevaEvidencia" 
+                                   (change)="onFileSelected($event)" 
+                                   accept="image/*, application/pdf">
+                            <div *ngIf="selectedFile" class="mt-2 small text-warning">
+                                Se reemplazará el archivo actual por: {{ selectedFile.name }}
+                            </div>
+                            <div class="form-text">Solo imágenes (JPG, PNG) o PDF.</div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Descripción Completa (Full Width) -->
+                <div class="mb-4">
+                    <label for="descripcion" class="form-label fw-bold">Descripción Completa</label>
+                    <textarea id="descripcion" 
+                              name="descripcion" 
+                              class="form-control" 
+                              [(ngModel)]="reporteForm.descripcion" 
+                              rows="3" 
+                              maxlength="500"></textarea>
+                </div>
+
+                <!-- Botón de Envío -->
+                <button type="submit" 
+                        class="btn btn-warning text-dark btn-lg w-100" 
+                        [disabled]="isLoading || reporteFormulario.invalid">
+                    <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    {{ isLoading ? 'Actualizando Gasto...' : 'Guardar Cambios' }}
+                </button>
+
+            </form>
+        </div>
+    </div>
+</div>

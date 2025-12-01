@@ -30,8 +30,8 @@ import { EditComponent as InvitarAmigosEditComponent } from './invitarAmigos/edi
 import { ShowComponent as InvitarAmigosShowComponent } from './invitarAmigos/show/show';
 
 //  Componentes de listadoAdeudos 
-import { IndexComponent as ListadoAdeudosIndexComponent } from './listadoAdeudos/index/index';
-import { CreateComponent as ListadoAdeudosCreateComponent } from './listadoAdeudos/create/create';
+import { ListadoAdeudosIndexComponent } from './listadoAdeudos/index/index';
+import { ListadoAdeudosCreateComponent } from './listadoAdeudos/create/create';
 import { EditComponent as ListadoAdeudosEditComponent } from './listadoAdeudos/edit/edit';
 import { ShowComponent as ListadoAdeudosShowComponent } from './listadoAdeudos/show/show'; 
 
@@ -43,10 +43,10 @@ import { ReglamentosEditComponent } from './reglamentos/edit/edit';
 import { ReglamentosShowComponent } from './reglamentos/show/show';
 
 // Componentes de reporteFinanzas
-import { IndexComponent as ReporteFinanzasIndexComponent } from './reporteFinanzas/index/index';
-import { CreateComponent as ReporteFinanzasCreateComponent } from './reporteFinanzas/create/create';
-import { EditComponent as ReporteFinanzasEditComponent } from './reporteFinanzas/edit/edit';
-import { ShowComponent as ReporteFinanzasShowComponent } from './reporteFinanzas/show/show';
+import { ReporteFinanzasIndexComponent } from './reporteFinanzas/index/index';
+import { ReporteFinanzasCreateComponent } from './reporteFinanzas/create/create';
+import { ReporteFinanzasEditComponent } from './reporteFinanzas/edit/edit';
+import { ReporteFinanzasShowComponent } from './reporteFinanzas/show/show';
 
 //  Componentes de reservaciones
 import { IndexComponent as ReservacionesIndexComponent } from './reservaciones/index/index';
@@ -124,10 +124,18 @@ export const routes: Routes = [
 
         
       // reporteFinanzas
-        { path: 'reporteFinanzas', component: ReporteFinanzasIndexComponent }, 
-        { path: 'reporteFinanzas/create', component: ReporteFinanzasCreateComponent }, 
-        { path: 'reporteFinanzas/:id/edit', component: ReporteFinanzasEditComponent }, 
-        { path: 'reporteFinanzas/:id', component: ReporteFinanzasShowComponent }, 
+        { path: 'reporteFinanzas', children: [
+            
+            // RUTAS ESTÁTICAS PRIMERO
+            { path: 'create', component: ReporteFinanzasCreateComponent }, 
+            
+            // RUTAS DINÁMICAS (SHOW y EDIT) - Usan el prefijo /reporteFinanzas/
+            { path: 'edit/:id', component: ReporteFinanzasEditComponent }, 
+            { path: 'show/:id', component: ReporteFinanzasShowComponent }, 
+            
+            // RUTA DE ÍNDICE (La ruta por defecto del módulo)
+            { path: '', component: ReporteFinanzasIndexComponent }, 
+        ]},
 
       // // reservaciones
       //   { path: 'reservaciones', component: ReservacionesIndexComponent }, 

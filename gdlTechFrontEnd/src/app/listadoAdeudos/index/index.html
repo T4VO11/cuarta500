@@ -1,1 +1,97 @@
-<p>index works!</p>
+<div class="container mt-4">
+    <h2 class="mb-4 text-primary">Gestión de Adeudos y Pagos</h2>
+
+    <div class="row mb-4">
+        <!-- Columna 1: Botón de Pago -->
+        <div class="col-md-4 d-grid">
+                   <button class="btn btn-success btn-lg mb-4 shadow-sm" routerLink="/main/listadoAdeudos/create"> Realizar un pago de mantenimiento </button>
+
+        </div>
+
+        <!-- Columna 2: Filtro por Mes -->
+        <div class="col-md-4">
+            <label for="filtroMes" class="form-label fw-bold">Filtrar por Mes de Pago</label>
+            <!-- El (ngModelChange) llama a la función filterAndCalculate en el .ts cuando cambia el valor -->
+            <input type="month" 
+                   id="filtroMes" 
+                   name="selectedPeriod"
+                   class="form-control" 
+                   [(ngModel)]="selectedPeriod" 
+                   (ngModelChange)="filterAndCalculate()">
+        </div>
+
+        <!-- Columna 3: Total Acumulado (Cuadro) -->
+        <div class="col-md-4">
+            <div class="card bg-light border-success h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-success mb-1">Total Acumulado (Mes Filtrado)</h5>
+                    <!-- Muestra la suma de totalAccumulated calculada en el .ts -->
+                    <h3 class="card-text fw-bold">${{ totalAccumulated | number:'1.2-2' }} MXN</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🚨 CORRECCIÓN: Usar allAdeudos.length en lugar de adeudos.length -->
+    <div *ngIf="allAdeudos.length === 0 && !isLoading" class="alert alert-warning" role="alert">
+        No hay registros de pagos disponibles.
+    </div>
+
+    <!-- Indicador de Carga -->
+    <div *ngIf="isLoading" class="text-center p-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="mt-2">Cargando listado de pagos...</p>
+    </div>
+
+    <!-- Tabla de Registros de Pago (Usa filteredAdeudos) -->
+    <div *ngIf="!isLoading && filteredAdeudos.length > 0" class="card shadow-lg rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th scope="col">Transacción ID</th>
+                            <th scope="col">Usuario / Casa</th>
+                            <th scope="col">Período Cubierto</th>
+                            <th scope="col">Monto Pagado</th>
+                            <th scope="col">Fecha Pago</th>
+                            <th scope="col">Estado</th>
+                            <th scope="col">Pasarela</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Itera sobre los pagos filtrados (filteredAdeudos) -->
+                        <tr *ngFor="let adeudo of filteredAdeudos" class="align-middle">
+                            <td>{{ adeudo.transaccion_id }}</td>
+                            <td>
+                                <strong>{{ adeudo.nombre }}</strong> <br>
+                                <span class="text-muted">Casa {{ adeudo.numero_casa }} (ID: {{ adeudo.usuario_id }})</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ adeudo.periodo_cubierto }}</span>
+                            </td>
+                            <td class="text-success fw-bold">${{ adeudo.monto_total_pagado | number:'1.2-2' }}</td>
+                            <td>{{ adeudo.fecha_pago | date:'short' }}</td>
+                            <td>
+                                <span class="badge" [ngClass]="{
+                                    'bg-success': adeudo.estado === 'confirmado',
+                                    'bg-warning text-dark': adeudo.estado === 'pendiente'
+                                }">{{ adeudo.estado | titlecase }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ adeudo.pasarela_pago?.nombre | titlecase }}</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mensaje si no hay resultados en el filtro -->
+    <div *ngIf="!isLoading && filteredAdeudos.length === 0 && allAdeudos.length > 0" class="alert alert-info mt-3">
+        No se encontraron pagos para el período seleccionado.
+    </div>
+</div>

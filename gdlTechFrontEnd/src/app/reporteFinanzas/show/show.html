@@ -1,1 +1,82 @@
-<p>show works!</p>
+<div class="container mt-4">
+    <button class="btn btn-secondary mb-4" (click)="regresar()">
+        <i class="bi bi-arrow-left"></i> Regresar a Listado
+    </button>
+
+    <!-- Indicador de Carga -->
+    <div *ngIf="isLoading" class="text-center p-5">
+        <div class="spinner-border text-danger" role="status"></div>
+        <p class="mt-2">Cargando detalles del egreso...</p>
+    </div>
+
+    <!-- Mensaje de Error -->
+    <div *ngIf="errorMessage && !isLoading" class="alert alert-danger" role="alert">
+        {{ errorMessage }}
+    </div>
+
+    <!-- Detalles del Reporte -->
+    <div *ngIf="reporte && !isLoading" class="card shadow-lg border-0 rounded-4">
+        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">Detalle del Egreso: {{ reporte.concepto }}</h3>
+            <!-- Botón para ir a Editar -->
+            <a [routerLink]="['/main/reporteFinanzas/edit', reporte._id]" class="btn btn-warning text-dark btn-sm">
+                <i class="bi bi-pencil"></i> Editar
+            </a>
+        </div>
+        <div class="card-body p-4">
+            <div class="row">
+                <!-- Columna Izquierda: Información Principal -->
+                <div class="col-md-7">
+                    
+                    <h4 class="text-danger border-bottom pb-2">Información del Gasto</h4>
+                    
+                    <ul class="list-group list-group-flush mb-4">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Monto Total:</strong> 
+                            <span class="fs-4 text-danger fw-bold">${{ reporte.monto | number:'1.2-2' }} MXN</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Fecha del Gasto:</strong> 
+                            <span>{{ reporte.fecha | date:'fullDate' }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Categoría:</strong> 
+                            <span class="badge bg-secondary fs-6">{{ reporte.categoria }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Condominio ID:</strong> 
+                            <span class="text-muted">{{ reporte.condominio_id }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Usuario que registró:</strong> 
+                            <span class="text-muted">ID: {{ reporte.usuario_id }}</span>
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Descripción:</strong> 
+                            <p class="mt-2 text-wrap">{{ reporte.descripcion || 'N/A' }}</p>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Columna Derecha: Evidencia -->
+                <div class="col-md-5">
+                    <h4 class="text-danger border-bottom pb-2">Evidencia (Recibo)</h4>
+                    
+                    <div class="mb-3">
+                        <strong>Tipo de Documento:</strong> 
+                        <span class="badge bg-info text-dark">{{ reporte.evidencia?.tipo_documento || 'Recibo Digital' }}</span>
+                    </div>
+
+                    <div class="text-center p-3 border rounded shadow-sm bg-light">
+                        <!-- Muestra la imagen. Usa la URL proporcionada en el ejemplo del prompt -->
+                        <img [src]="getEvidenciaUrl()" 
+                        alt="Evidencia del Egreso" 
+                         class="img-fluid rounded shadow-sm" 
+                         style="max-height: 400px;">
+                        <p class="mt-2 small text-muted">Imagen de la evidencia.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
