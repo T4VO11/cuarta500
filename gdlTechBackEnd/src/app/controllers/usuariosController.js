@@ -383,7 +383,7 @@ exports.login = async (req, res) => {
         const { username, password } = req.body;
 
         // Buscar usuario por username
-        const usuario = await Usuario.findOne({ username }).select('+password');
+        const usuario = await LocalUsuario.findOne({ username }).select('+password');
         
         if (!usuario) {
             return JsonResponse.error(res, 'Usuario no encontrado', 401);
@@ -433,7 +433,7 @@ exports.miPerfil = async (req, res) => {
         }
 
         // Buscar usuario por usuario_id
-        const usuario = await Usuario.findOne({ usuario_id: Number(usuario_id) });
+        const usuario = await LocalUsuario.findOne({ usuario_id: Number(usuario_id) });
 
         if (!usuario) {
             return JsonResponse.notFound(res, 'Usuario no encontrado');

@@ -1,15 +1,23 @@
-const Categoria = require('../../models/Categoria');
+const LocalCategoria = require('../../models/local/Categoria');
+const AtlasCategoria = require('../../models/atlas/Categoria')
+
 const JsonResponse = require('../../utils/JsonResponse');
 const Encryption = require('../../utils/encryption');
 const mongoose = require('mongoose');
 
+const createDualWriter = require('../../utils/dualWriter');
+const categoriaDW = createDualWriter(LocalCategoria, AtlasCategoria);
+
 /**
+ * 
+ * TODOS LOS READS (index, show's) se aplican contra local para mayor eficiencia
+ * Las modificaciones (create, update, delete) se realizan primero en local 
  * Obtener todas las categorías (index)
  * GET /categorias
  */
 exports.index = async (req, res) => {
     try {
-        const categorias = await Categoria.find({ condominio_id: 'C500' })
+        const categorias = await LocalCategoria.find({ condominio_id: 'C500' })
             .sort({ categoria_id: 1 });
 
         // if (req.query.encrypt === 'true') {
@@ -39,7 +47,7 @@ exports.show = async (req, res) => {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const categoria = await Categoria.findById(req.params.id);
+        const categoria = await LocalCategoria.findById(req.params.id);
 
         if (!categoria) {
             return JsonResponse.notFound(res, 'Categoría no encontrada');
@@ -76,22 +84,25 @@ exports.store = async (req, res) => {
         } = req.body;
 
         // Verificar si el categoria_id ya existe
-        const categoriaExistente = await Categoria.findOne({ categoria_id });
+        const categoriaExistente = await LocalCategoria.findOne({ categoria_id });
         if (categoriaExistente) {
             return JsonResponse.error(res, 'El categoria_id ya existe', 400);
         }
 
-        const nuevaCategoria = new Categoria({
+        // Creamos nueva categoria
+        const payload = {
             categoria_id,
             condominio_id: 'C500',
             nombre,
             descripcion: descripcion || '',
             estado: estado || 'activo'
-        });
+        };
 
-        await nuevaCategoria.save();
+        // Usamos  dualWriter para crear en local e intentar en Atlas (si falla, lo encola)
+        const nuevaCategoriaLocal = await categoriaDW.create(payload);
+        const categoriaObj = nuevaCategoriaLocal.toObject();
 
-        return JsonResponse.success(res, nuevaCategoria, 'Categoría creada exitosamente', 201);
+        return JsonResponse.success(res, categoriaObj, 'Categoría creada exitosamente', 201);
     } catch (error) {
         console.error('Error en store categoria:', error);
         if (error.code === 11000) {
@@ -111,7 +122,7 @@ exports.update = async (req, res) => {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const categoria = await Categoria.findById(req.params.id);
+        const categoria = await LocalCategoria.findById(req.params.id);
         if (!categoria) {
             return JsonResponse.notFound(res, 'Categoría no encontrada');
         }
@@ -122,11 +133,14 @@ exports.update = async (req, res) => {
             estado
         } = req.body;
 
-        if (nombre) categoria.nombre = nombre;
-        if (descripcion !== undefined) categoria.descripcion = descripcion;
-        if (estado) categoria.estado = estado;
+        const data = {};
+        if (nombre) data.nombre = nombre;
+        if (descripcion !== undefined) data.descripcion = descripcion;
+        if (estado) data.estado = estado;
 
-        await categoria.save();
+        // dualWrite
+        const updated = await usuarioDW.update(categoria._id, data);
+        const categoriaObj = updated.toObject();
 
         // if (req.query.encrypt === 'true') {
         //     const responseData = {
@@ -138,7 +152,7 @@ exports.update = async (req, res) => {
         //     return res.json(encryptedResponse);
         // }
 
-        return JsonResponse.success(res, categoria, 'Categoría actualizada exitosamente');
+        return JsonResponse.success(res, categoriaObj, 'Categoría actualizada exitosamente');
     } catch (error) {
         console.error('Error en update categoria:', error);
         return JsonResponse.error(res, 'Error al actualizar categoría', 500);
@@ -151,16 +165,19 @@ exports.update = async (req, res) => {
  */
 exports.destroy = async (req, res) => {
     try {
+        // Buscamos por ObjectId
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const categoria = await Categoria.findById(req.params.id);
+        // Sino, buscamos por id
+        const categoria = await LocalCategoria.findById(req.params.id);
         if (!categoria) {
             return JsonResponse.notFound(res, 'Categoría no encontrada');
         }
 
-        await Categoria.findByIdAndDelete(req.params.id);
+        // dualWrite
+        await categoriaDW.delete(req.params.id);
 
         return JsonResponse.success(res, null, 'Categoría eliminada exitosamente');
     } catch (error) {

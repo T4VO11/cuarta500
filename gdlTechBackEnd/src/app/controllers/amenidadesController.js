@@ -228,6 +228,7 @@ exports.destroy = async (req, res) => {
             return JsonResponse.notFound(res, 'Amenidad no encontrada');
         }
 
+        // dualWrite
         await amenidadDW.delete(req.params.id);
 
         return JsonResponse.success(res, null, 'Amenidad eliminada exitosamente');
