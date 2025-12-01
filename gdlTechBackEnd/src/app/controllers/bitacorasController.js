@@ -1,12 +1,18 @@
-const Bitacora = require('../../models/Bitacora');
+const LocalBitacora = require('../../models/local/Bitacora');
+const AtlasBitacora = require('../../models/atlas/Bitacora');
+
 const JsonResponse = require('../../utils/JsonResponse');
 const Encryption = require('../../utils/encryption');
 const mongoose = require('mongoose');
 const { buildImageUrl } = require('../../utils/imageUrlHelper');
 
+const createDualWriter = require('../../utils/dualWriter');
+const bitacoraDW = createDualWriter(LocalBitacora, AtlasBitacora)
+
+// ------------READS  (Con local. Más rápido y offline).
 exports.index = async (req, res) => {
     try {
-        const bitacoras = await Bitacora.find({ condominio_id: 'C500' })
+        const bitacoras = await LocalBitacora.find({ condominio_id: 'C500' })
             .sort({ registro_id: -1 });
 
         const bitacorasConUrls = bitacoras.map(bitacora => {
@@ -36,11 +42,12 @@ exports.index = async (req, res) => {
 
 exports.show = async (req, res) => {
     try {
+        console.log('SHOW ID de bitacora solicitado:');
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const bitacora = await Bitacora.findById(req.params.id);
+        const bitacora = await LocalBitacora.findById(req.params.id);
 
         if (!bitacora) {
             return JsonResponse.notFound(res, 'Bitácora no encontrada');
@@ -68,6 +75,7 @@ exports.show = async (req, res) => {
     }
 };
 
+// CREATE (usanddo dualWriter)
 exports.store = async (req, res) => {
     try {
         const {
@@ -81,22 +89,28 @@ exports.store = async (req, res) => {
             vehiculo
         } = req.body;
 
-        const bitacoraExistente = await Bitacora.findOne({ registro_id });
+        //Validacion de registro_id unico
+        const bitacoraExistente = await LocalBitacora.findOne({ registro_id });
         if (bitacoraExistente) {
             return JsonResponse.error(res, 'El registro_id ya existe', 400);
         }
 
-        let detalleAccesoData = detalle_acceso ? (typeof detalle_acceso === 'string' ? JSON.parse(detalle_acceso) : detalle_acceso) : {};
+        // Parse del detalle_acceso
+        let detalleAccesoData = 
+            typeof detalle_acceso === 'string'
+                ? JSON.parse(detalle_acceso) 
+                : detalle_acceso || {};
         if (req.file) {
             detalleAccesoData.imagen_ine_url = `uploads/bitacoras/${req.file.filename}`;
         }
 
         // Si el tipo es visita_no_esperada, el vehiculo puede estar en detalle_acceso
-        if (tipo_registro === 'visita_no_esperada' && vehiculo && !detalleAccesoData.vehiculo) {
+        if (tipo_registro === 'visita_no_esperada' && vehiculo) {
             detalleAccesoData.vehiculo = typeof vehiculo === 'string' ? JSON.parse(vehiculo) : vehiculo;
         }
 
-        const nuevaBitacora = new Bitacora({
+        // Construimos el objeto plano, en lugar de la instancia mongoose
+        const payload ={
             registro_id,
             condominio_id: 'C500',
             tipo_registro,
@@ -106,11 +120,12 @@ exports.store = async (req, res) => {
             invitacion_id: invitacion_id || null,
             detalle_acceso: detalleAccesoData,
             vehiculo: vehiculo && tipo_registro !== 'visita_no_esperada' ? (typeof vehiculo === 'string' ? JSON.parse(vehiculo) : vehiculo) : {}
-        });
+        };
 
-        await nuevaBitacora.save();
+        // Usar dualWriter para crear en local e intentar en Atlas (en caso de fallas, encola)
+        const nuevaBitacoraLocal = await bitacoraDW.create(payload);
 
-        const bitacoraObj = nuevaBitacora.toObject();
+        const bitacoraObj = nuevaBitacoraLocal.toObject();
         if (bitacoraObj.detalle_acceso?.imagen_ine_url) {
             bitacoraObj.detalle_acceso.imagen_ine_url = buildImageUrl(req, bitacoraObj.detalle_acceso.imagen_ine_url);
         }
@@ -118,25 +133,29 @@ exports.store = async (req, res) => {
         return JsonResponse.success(res, bitacoraObj, 'Bitácora creada exitosamente', 201);
     } catch (error) {
         console.error('Error en store bitacora:', error);
-        if (error.code === 11000) {
-            return JsonResponse.error(res, 'El registro_id ya existe', 400);
+        if ( error.code === 11000) {
+            return JsonResponde.error(res, "El 'registro_id' ya existe", 400);
         }
         return JsonResponse.error(res, 'Error al crear bitácora', 500);
     }
 };
 
+// UPDATE (dualWriter)
 exports.update = async (req, res) => {
     try {
-        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        console.log('update');
+        const id = req.params.id;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const bitacora = await Bitacora.findById(req.params.id);
+        // Obtenemos el documento local para manejar merge de galeria
+        const bitacora = await LocalBitacora.findById(id);
         if (!bitacora) {
             return JsonResponse.notFound(res, 'Bitácora no encontrada');
         }
 
-        const {
+        const { 
             tipo_registro,
             fecha_hora,
             accion,
@@ -144,95 +163,95 @@ exports.update = async (req, res) => {
             invitacion_id,
             detalle_acceso,
             vehiculo
-        } = req.body;
+         } = req.body;
 
+         //Preparamos los datos para actualizar
+         let detalleAcceso = bitacora.detalle_acceso || {};
+
+        // Imagen
         if (req.file) {
             if (!bitacora.detalle_acceso) bitacora.detalle_acceso = {};
             bitacora.detalle_acceso.imagen_ine_url = `uploads/bitacoras/${req.file.filename}`;
         }
 
-        if (tipo_registro) bitacora.tipo_registro = tipo_registro;
-        if (fecha_hora) bitacora.fecha_hora = fecha_hora;
-        if (accion) bitacora.accion = accion;
-        if (usuario_id !== undefined) bitacora.usuario_id = usuario_id;
-        if (invitacion_id !== undefined) bitacora.invitacion_id = invitacion_id;
         if (detalle_acceso) {
             try {
-                const detalleData = typeof detalle_acceso === 'string' ? JSON.parse(detalle_acceso) : detalle_acceso;
-                bitacora.detalle_acceso = { ...bitacora.detalle_acceso, ...detalleData };
+                detalleAcceso = { ...detalleAcceso, ...(typeof detalle_acceso === 'string' ? JSON.parse(detalle_acceso) : detalle_acceso) };
             } catch {
-                bitacora.detalle_acceso = { ...bitacora.detalle_acceso, ...detalle_acceso };
+                detalleAcceso = { ...detalleAcceso, ...detalle_acceso };
             }
         }
-        // Si el tipo es visita_no_esperada, el vehiculo va en detalle_acceso
+
+        // Vehículo según tipo_registro
+        let vehiculoData = actual.vehiculo || {};
+
         if (tipo_registro === 'visita_no_esperada' && vehiculo) {
-            try {
-                const vehiculoData = typeof vehiculo === 'string' ? JSON.parse(vehiculo) : vehiculo;
-                if (!bitacora.detalle_acceso) bitacora.detalle_acceso = {};
-                bitacora.detalle_acceso.vehiculo = { ...bitacora.detalle_acceso.vehiculo, ...vehiculoData };
-            } catch {
-                if (!bitacora.detalle_acceso) bitacora.detalle_acceso = {};
-                bitacora.detalle_acceso.vehiculo = { ...bitacora.detalle_acceso.vehiculo, ...vehiculo };
-            }
+            const v = typeof vehiculo === 'string' ? JSON.parse(vehiculo) : vehiculo;
+            detalleAcceso.vehiculo = { ...detalleAcceso.vehiculo, ...v };
         } else if (vehiculo) {
-            try {
-                const vehiculoData = typeof vehiculo === 'string' ? JSON.parse(vehiculo) : vehiculo;
-                bitacora.vehiculo = { ...bitacora.vehiculo, ...vehiculoData };
-            } catch {
-                bitacora.vehiculo = { ...bitacora.vehiculo, ...vehiculo };
-            }
+            const v = typeof vehiculo === 'string' ? JSON.parse(vehiculo) : vehiculo;
+            vehiculoData = { ...vehiculoData, ...v };
         }
 
-        await bitacora.save();
 
-        const bitacoraObj = bitacora.toObject();
+        // Merge fields
+        const updates ={
+            tipo_registro,
+            fecha_hora,
+            accion,
+            usuario_id,
+            invitacion_id,
+            detalle_acceso: detalleAcceso,
+            vehiculo: vehiculoData
+        };
+
+        //dualWrite
+        const updated = await bitacoraDW.update(id, updates);
+
+        const bitacoraObj = updated.toObject();
         if (bitacoraObj.detalle_acceso?.imagen_ine_url) {
-            bitacoraObj.detalle_acceso.imagen_ine_url = buildImageUrl(req, bitacoraObj.detalle_acceso.imagen_ine_url);
+            bitacoraObk.detalle_acceso.imagen_ine_url = buildImageUrl(req, bitacoraObj.detalle_acceso.imagen_ine_url);
         }
 
-        // if (req.query.encrypt === 'true') {
-        //     const responseData = {
-        //         estado: 'exito',
-        //         mensaje: 'Bitácora actualizada exitosamente',
-        //         data: bitacoraObj
-        //     };
-        //     const encryptedResponse = Encryption.encryptResponse(responseData);
-        //     return res.json(encryptedResponse);
-        // }
-
-        return JsonResponse.success(res, bitacoraObj, 'Bitácora actualizada exitosamente');
+        return JsonResponse.success(res, bitacoraObj, 'Bitacora Actualizada exitosamente');
     } catch (error) {
-        console.error('Error en update bitacora:', error);
+        console.error('Error en update bitacor: ', error);
         return JsonResponse.error(res, 'Error al actualizar bitácora', 500);
     }
 };
 
+// DELETE (DualWriter)
+
+
 exports.destroy = async (req, res) => {
     try {
-        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        const id = req.params.id;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const bitacora = await Bitacora.findById(req.params.id);
+        const bitacora = await LocalBitacora.findById(id);
         if (!bitacora) {
             return JsonResponse.notFound(res, 'Bitácora no encontrada');
         }
 
-        await Bitacora.findByIdAndDelete(req.params.id);
+        await bitacoraDW.delete(id);
 
         return JsonResponse.success(res, null, 'Bitácora eliminada exitosamente');
     } catch (error) {
         console.error('Error en destroy bitacora:', error);
         return JsonResponse.error(res, 'Error al eliminar bitácora', 500);
-    }
+    };
 };
 
+
+    // READ HISTORIAL DEL USUARIO (solo Local - conexion mas rapida)
 // Endpoint para usuarios normales: obtener historial de accesos del usuario autenticado
 exports.miHistorial = async (req, res) => {
     try {
-        // Obtener usuario_id del token JWT
         const usuario_id = req.usuario?.usuario_id;
         
+        // Obtener usuario_id del token JWT        
         if (!usuario_id) {
             return JsonResponse.error(res, 'Usuario no identificado', 401);
         }
@@ -240,7 +259,7 @@ exports.miHistorial = async (req, res) => {
         const usuarioIdNum = Number(usuario_id);
         
         // Buscar bitácoras relacionadas con el usuario (accesos, invitaciones, etc.)
-        const bitacoras = await Bitacora.find({
+        const bitacoras = await LocalBitacora.find({
             $and: [
                 {
                     $or: [

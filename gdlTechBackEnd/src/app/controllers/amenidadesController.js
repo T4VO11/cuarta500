@@ -127,7 +127,7 @@ exports.store = async (req, res) => {
     } catch (error) {
         console.error('Error en store amenidad:', error);
         if (error.code === 11000) {
-            return JsonResponse.error(res, 'El amenidad_id ya existe', 400);
+            return JsonResponse.error(res, "El 'amenidad_id' ya existe", 400);
         }
         return JsonResponse.error(res, 'Error al crear amenidad', 500);
     }
