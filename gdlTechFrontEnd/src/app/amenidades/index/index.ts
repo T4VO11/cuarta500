@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router'; // Para la navegación
 import { AmenidadService } from '../../services/amenidad'; // Importa el servicio
+import { AuthService } from '../../services/auth';
 
 @Component({
   selector: 'app-amenidades-index',
@@ -13,6 +14,10 @@ import { AmenidadService } from '../../services/amenidad'; // Importa el servici
 })
 export class AmenidadesIndexComponent implements OnInit {
 
+  //roles
+  userRole: string | null = null;
+  constructor(private authService: AuthService) { }
+
   private amenidadService = inject(AmenidadService); 
   amenidades: any[] = []; // Array para guardar y mostrar los datos de la tabla
 
@@ -21,6 +26,7 @@ export class AmenidadesIndexComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadAmenidades();
+    this.userRole = this.authService.getRole();
   }
 
   // LEER 
@@ -85,4 +91,8 @@ export class AmenidadesIndexComponent implements OnInit {
     cerrarModal(): void {
         this.imagenModalUrl = null;
     }
+
+    get isAdmin(): boolean {
+    return this.userRole === 'administrador';
+  }
 }

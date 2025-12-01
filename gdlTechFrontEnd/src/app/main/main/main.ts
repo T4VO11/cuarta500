@@ -11,12 +11,38 @@ import { AuthService } from '../../services/auth';
   styleUrl: './main.css',
 })
 export class MainComponent { 
-  
-  private authService = inject(AuthService);
+
+  //roles
+  userRole: string | null = null;
+  constructor(private authService: AuthService) { }
+
+  ngOnInit(): void {
+    this.userRole = this.authService.getRole();
+  }
   
   // FUNCIÓN PARA LA PRESENTACIÓN DE LOGOUT 
   cerrarSesion(): void {
         this.authService.logout().subscribe({
     });
+  }
+
+  get isAdmin(): boolean {
+    return this.userRole === 'administrador';
+  }
+
+  get isDueno(): boolean {
+    return this.userRole === 'dueño';
+  }
+
+  get isAdminOrDueno(): boolean {
+    return this.userRole === 'administrador' || this.userRole === 'dueño';
+  }
+
+  get isAdminOrGuardia(): boolean {
+    return this.userRole === 'administrador' || this.userRole === 'guardia';
+  }
+
+  get isAnyRole(): boolean {
+    return this.userRole === 'administrador' || this.userRole === 'dueño' || this.userRole === 'guardia';
   }
 }

@@ -3,6 +3,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { RouterModule, Router } from '@angular/router'; 
 import { FormsModule } from '@angular/forms'; 
 import { ReporteFinanzaService } from '../../services/reporte-finanza'; 
+import { AuthService } from '../../services/auth';
 
 @Component({
   selector: 'app-reporteFinanzas-index',
@@ -13,6 +14,10 @@ import { ReporteFinanzaService } from '../../services/reporte-finanza';
   styleUrl: './index.css',
 })
 export class ReporteFinanzasIndexComponent implements OnInit {
+
+  //roles
+  userRole: string | null = null;
+  
   
   private reporteFinanzaService = inject(ReporteFinanzaService); 
   private router = inject(Router);
@@ -25,7 +30,7 @@ export class ReporteFinanzasIndexComponent implements OnInit {
   selectedPeriod: string; // YYYY-MM (para el input type="month")
   isLoading: boolean = true;
   
-  constructor() {
+  constructor(private authService: AuthService) {
     // Inicializar el filtro al mes actual
     const today = new Date();
     const year = today.getFullYear();
@@ -36,6 +41,7 @@ export class ReporteFinanzasIndexComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadReportes();
+    this.userRole = this.authService.getRole();
   }
 
   // 1. LEER (Obtiene todos los reportes de egresos)
@@ -142,5 +148,9 @@ export class ReporteFinanzasIndexComponent implements OnInit {
         error: (err) => console.error('Error al eliminar:', err)
       });
     }
+  }
+
+  get isAdmin(): boolean {
+    return this.userRole === 'administrador';
   }
 }

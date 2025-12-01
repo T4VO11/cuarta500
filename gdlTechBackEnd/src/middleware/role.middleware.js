@@ -54,11 +54,17 @@ const requireDueño = requireRole(['dueño']);
  */
 const requireAdminOrGuardia = requireRole(['administrador', 'guardia']);
 
+const requireAdminOrDueño = requireRole(['administrador', 'dueño']);
+
+const requireAnyRole = requireRole(['administrador', 'guardia', 'dueño']);
+
 module.exports = {
     requireRole,
     requireAdmin,
     requireGuardia,
     requireDueño,
-    requireAdminOrGuardia
+    requireAdminOrGuardia,
+    requireAdminOrDueño,
+    requireAnyRole
 };
 

@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router'; 
 import { IncidenteService } from '../../services/incidente'; 
+import { AuthService } from '../../services/auth';
 
 @Component({
   selector: 'app-incidentes-index',
@@ -11,6 +12,10 @@ import { IncidenteService } from '../../services/incidente';
   styleUrl: './index.css',
 })
 export class IncidentesIndexComponent implements OnInit {
+
+  //roles
+  userRole: string | null = null;
+  constructor(private authService: AuthService) { }
   
   private incidenteService = inject(IncidenteService); 
   private router = inject(Router);
@@ -19,6 +24,7 @@ export class IncidentesIndexComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadIncidentes();
+    this.userRole = this.authService.getRole();
   }
 
   // Carga la lista de incidentes
@@ -44,5 +50,14 @@ export class IncidentesIndexComponent implements OnInit {
         error: (err) => console.error('Error al eliminar:', err)
       });
     }
+  }
+
+  //Funcion para limpiar html
+  get isAdmin(): boolean {
+    return this.userRole === 'administrador';
+  }
+
+  get isAdminOrDueno(): boolean {
+    return this.userRole === 'administrador' || this.userRole === 'dueño';
   }
 }

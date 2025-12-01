@@ -4,7 +4,8 @@
     <div class="row mb-4 align-items-end">
         <!-- Columna 1: Botón Crear -->
         <div class="col-md-3 d-grid">
-            <a [routerLink]="['/main/reporteFinanzas/create']" class="btn btn-success btn-lg shadow-sm">
+            <a *ngIf="isAdmin"
+                [routerLink]="['/main/reporteFinanzas/create']" class="btn btn-success btn-lg shadow-sm">
                 <i class="bi bi-receipt"></i> Cargar Nuevo Gasto
             </a>
         </div>
@@ -71,10 +72,12 @@
                                 <a [routerLink]="['/main/reporteFinanzas/show', reporte._id]" class="btn btn-sm btn-secondary me-2">
                                     <i class="bi bi-eye"></i> Detalle
                                 </a>
-                                <a [routerLink]="['/main/reporteFinanzas/edit', reporte._id]" class="btn btn-sm btn-warning me-2">
+                                <a *ngIf="isAdmin"
+                                    [routerLink]="['/main/reporteFinanzas/edit', reporte._id]" class="btn btn-sm btn-warning me-2">
                                     <i class="bi bi-pencil"></i> Editar
                                 </a>
-                                <button class="btn btn-sm btn-danger" (click)="deleteReporte(reporte._id)">
+                                <button *ngIf="isAdmin"
+                                    class="btn btn-sm btn-danger" (click)="deleteReporte(reporte._id)">
                                     <i class="bi bi-trash"></i> Eliminar
                                 </button>
                             </td>

@@ -3,7 +3,7 @@ const router = express.Router();
 const amenidadesController = require('../app/controllers/amenidadesController');
 const { validarAmenidad } = require('../middleware/amenidadValidator');
 const authMiddleware = require('../middleware/auth.middleware');
-const { requireAdmin } = require('../middleware/role.middleware');
+const { requireAdmin, requireAdminOrDueño } = require('../middleware/role.middleware');
 const createUploader = require('../../multerConfig');
 
 const upload = createUploader('amenidades');
@@ -13,8 +13,8 @@ const upload = createUploader('amenidades');
 router.get('/disponibles', authMiddleware, amenidadesController.disponibles);
 
 // Rutas GET: solo requieren autenticación (usuarios normales pueden ver)
-router.get('/', authMiddleware, amenidadesController.index);
-router.get('/:id', authMiddleware, amenidadesController.show);
+router.get('/', authMiddleware, requireAdminOrDueño , amenidadesController.index);
+router.get('/:id', authMiddleware, requireAdminOrDueño, amenidadesController.show);
 
 // Rutas de modificación: requieren administrador
 router.post('/', authMiddleware, requireAdmin, upload.array('galeria', 10), validarAmenidad, amenidadesController.store);
