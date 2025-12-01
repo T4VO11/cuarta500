@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common'; 
 import { UsuarioService } from '../../services/usuario'; // Servicio de CRUD
 import { RouterModule } from '@angular/router'; // Para usar routerLink en la tabla
+import { AuthService } from '../../services/auth';
 
 @Component({
   selector: 'app-usuarios-index', // Nombre actualizado
@@ -13,6 +14,10 @@ import { RouterModule } from '@angular/router'; // Para usar routerLink en la ta
 })
 
 export class UsuariosIndexComponent implements OnInit {
+
+  //roles
+  userRole: string | null = null;
+  constructor(private authService: AuthService) { }
     
     // Inyecciones
     private usuarioService = inject(UsuarioService);
@@ -28,6 +33,7 @@ export class UsuariosIndexComponent implements OnInit {
 
    ngOnInit(): void {
         this.loadUsuarios();
+        this.userRole = this.authService.getRole();
     }
   
    // ============== 1. LEER (Read) ===================
@@ -70,4 +76,8 @@ export class UsuariosIndexComponent implements OnInit {
     cerrarModal(): void {
         this.imagenModalUrl = null;
     }
+
+    get isAdmin(): boolean {
+    return this.userRole === 'administrador';
+  }
 }
