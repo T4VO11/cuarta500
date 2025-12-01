@@ -113,7 +113,7 @@ export const routes: Routes = [
         { path: 'listadoAdeudos/:id', component: ListadoAdeudosShowComponent }, 
 
       // Reglamentos
-    { 
+        { 
             path: 'reglamentos', 
             redirectTo: 'reglamentos/6910f476625ce8db61ec8f57', // ID de ejemplo del reglamento activo
             pathMatch: 'full' 
