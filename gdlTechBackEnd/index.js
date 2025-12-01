@@ -1,39 +1,44 @@
 require('dotenv').config();
 
 const express = require('express');
-const app = express();
 const path = require('path');
-const decryptionRequest = require('./src/middleware/decryptionRequest');
-const connectDB = require('./src/config/mongoose'); 
-const initialSync = require('./src/sync/initialSync');      //Instala datos base si es un nuevo dispositivo
-const startSyncWorker = require('./src/sync/syncWorker');    // Mantiene la sincronizacion continua
+const cors = require('cors');
+const app = express();
 
+//Imports de configuracion
+const connectDB = require('./src/config/mongoose'); 
 // Importamos las conexiones (atlas/local) para inicializar 
 const localConn = require('./src/config/localConnection');
 const atlasConn = require('./src/config/atlasConnection');
 
-console.log('initialSync type: ', typeof initialSync);
-//Ejecutamos initialSync y worker despues de dar un tiempo para la conexión
+const initialSync = require('./src/sync/initialSync');      //Instala datos base si es un nuevo dispositivo
+const startSyncWorker = require('./src/sync/syncWorker');    // Mantiene la sincronizacion continua
+
+const decryptionRequest = require('./src/middleware/decryptionRequest');
+
+//Conexion a Base de Datos
+connectDB()
+  .then(() => console.log("🔗 MongoDB conectado (modo online OK)."))
+  .catch(() => {
+    console.warn("⚠️  MongoDB no disponible, el servidor seguirá en modo offline.");
+  });
+
+//Arranque de sincronizadores
 (async () => {
+    console.log("Esperando 1.5s para estabilidad de conexiones")
     await new Promise(r => setTimeout(r, 1500));
     
-    //Sincronizacion inicial (Atlas a Local)
-    initialSync().catch(err => console.error('initialSync fallo: ', err));
+    console.log("Ejecutando initialSync")
+    initialSync()
+    .then(() => console.log("initialSync completado"))
+    .catch(err => console.error('initialSync fallo: ', err));
 
-    //Iniciamos el worker continuo
+    console.log("Iniciando syncWorker (sincronizacion continua...");
     startSyncWorker();
 })();
 
-connectDB().then(() => {
-    console.log("Conexion establecida.");
-
-}).catch(err => {
-    console.warn(`⚠️  MongoDB no disponible, pero el servidor continuará en modo offline.`);
-});
-
 //Arrancamos el servidor
 const port = process.env.PORT || 3000;
-const cors = require('cors');
 const { setDefaultAutoSelectFamilyAttemptTimeout } = require('net');
 
 app.use(express.json());
