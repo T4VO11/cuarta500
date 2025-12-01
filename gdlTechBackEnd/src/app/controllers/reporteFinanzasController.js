@@ -88,7 +88,7 @@ exports.store = async (req, res) => {
 
         let evidenciaData = evidencia ? (typeof evidencia === 'string' ? JSON.parse(evidencia) : evidencia) : {};
         if (req.file) {
-            evidenciaData.imagen_url = `reporteFinanzas/${req.file.filename}`;
+            evidenciaData.imagen_url = `uploads/reporteFinanzas/${req.file.filename}`;
         }
 
         const nuevoReporte = new ReporteFinanza({
@@ -142,7 +142,7 @@ exports.update = async (req, res) => {
 
         if (req.file) {
             if (!reporte.evidencia) reporte.evidencia = {};
-            reporte.evidencia.imagen_url = `reporteFinanzas/${req.file.filename}`;
+            reporte.evidencia.imagen_url = `uploads/reporteFinanzas/${req.file.filename}`;
         }
 
         if (concepto) reporte.concepto = concepto;

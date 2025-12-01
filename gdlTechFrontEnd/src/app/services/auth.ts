@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { Router } from '@angular/router'; //para redirigir en el logout
+import { jwtDecode } from 'jwt-decode';
 
 @Injectable({
   providedIn: 'root'
@@ -55,5 +56,21 @@ constructor(private http: HttpClient, private router: Router) { }
   //Verifica si el usuario está logueado.
   isLoggedIn(): boolean {
     return !!this.getToken();
+  }
+
+  getRole(): string | null {
+    const token = this.getToken();
+    if (!token) return null;
+
+    try {
+      const decoded: any = jwtDecode(token);
+      
+      // Aquí manejamos tu estructura anidada (usuario.usuario.rol)
+      // O la plana (usuario.rol) por si acaso.
+      return decoded.usuario?.rol || decoded.rol || null;
+      
+    } catch (error) {
+      return null;
+    }
   }
 }

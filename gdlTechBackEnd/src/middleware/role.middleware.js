@@ -14,9 +14,14 @@ const requireRole = (rolesPermitidos) => {
         if (!req.usuario) {
             return JsonResponse.unauthorized(res, 'Usuario no autenticado');
         }
+        const usuarioRol = req.usuario.rol || (req.usuario.usuario ? req.usuario.usuario.rol : null);
+
+        if (!usuarioRol) {
+             return JsonResponse.error(res, 'Token inválido: No se encuentra el rol del usuario', 403);
+        }
 
         // Verificar que el usuario tenga uno de los roles permitidos
-        if (!rolesPermitidos.includes(req.usuario.rol)) {
+        if (!rolesPermitidos.includes(usuarioRol)) {
             return JsonResponse.error(
                 res, 
                 `Acceso denegado. Se requiere uno de los siguientes roles: ${rolesPermitidos.join(', ')}`,
@@ -35,13 +40,31 @@ const requireRole = (rolesPermitidos) => {
 const requireAdmin = requireRole(['administrador']);
 
 /**
+ * Middleware para verificar que sea Guardia
+ */
+const requireGuardia = requireRole(['guardia']);
+
+/**
+ * Middleware para verificar que sea Residente
+ */
+const requireDueño = requireRole(['dueño']);
+
+/**
  * Middleware para verificar que el usuario sea administrador o guardia
  */
 const requireAdminOrGuardia = requireRole(['administrador', 'guardia']);
 
+const requireAdminOrDueño = requireRole(['administrador', 'dueño']);
+
+const requireAnyRole = requireRole(['administrador', 'guardia', 'dueño']);
+
 module.exports = {
     requireRole,
     requireAdmin,
-    requireAdminOrGuardia
+    requireGuardia,
+    requireDueño,
+    requireAdminOrGuardia,
+    requireAdminOrDueño,
+    requireAnyRole
 };
 

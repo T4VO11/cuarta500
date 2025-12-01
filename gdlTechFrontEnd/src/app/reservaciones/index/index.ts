@@ -2,7 +2,8 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router'; 
-import { ReservacionService } from '../../services/reservacion'; 
+import { ReservacionService } from '../../services/reservacion';
+import { AuthService } from '../../services/auth'; 
 
 @Component({
   selector: 'app-reservaciones-index',
@@ -12,6 +13,10 @@ import { ReservacionService } from '../../services/reservacion';
   styleUrl: './index.css',
 })
 export class IndexComponent implements OnInit {
+
+  //roles
+  userRole: string | null = null;
+  constructor(private authService: AuthService) { }
   
   private reservacionService = inject(ReservacionService); 
   private router = inject(Router);
@@ -20,6 +25,7 @@ export class IndexComponent implements OnInit {
   
   ngOnInit(): void {
     this.loadReservaciones();
+    this.userRole = this.authService.getRole();
   }
 
   // Carga la tabla de reservaciones
@@ -51,5 +57,13 @@ export class IndexComponent implements OnInit {
   // Navega a la edición
   goToEdit(id: string): void {
     this.router.navigate(['/main/reservaciones/edit', id]);
+  }
+
+  get isAdmin(): boolean {
+    return this.userRole === 'administrador';
+  }
+
+  get isDueno(): boolean {
+    return this.userRole === 'dueño';
   }
 }

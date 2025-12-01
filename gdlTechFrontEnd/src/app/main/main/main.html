@@ -11,15 +11,15 @@
 <main> <div class="main-content-wrapper"> <nav class="sidebar-menu">
     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <!-- Links para las tablas principales -->
-                <li><a routerLink="/main/usuarios" routerLinkActive="active">Usuarios</a></li>
-                <li><a routerLink="/main/amenidades" routerLinkActive="active">Amenidades</a> </li>
-                <li><a routerLink="/main/bitacoras" routerLinkActive="active">Bitácoras</a></li>
-                <li><a routerLink="/main/incidentes" routerLinkActive="active">Incidentes</a></li>
-                <li><a routerLink="/main/listadoAdeudos" routerLinkActive="active">Listado de Adeudos</a></li>
-                <li><a routerLink="/main/invitarAmigos" routerLinkActive="active">Invitar Amigos</a></li>
-                <li><a routerLink="/main/reglamentos" routerLinkActive="active">Reglamentos</a></li>
-                <li><a routerLink="/main/reporteFinanzas" routerLinkActive="active">Reporte de Finanzas</a></li>
-                <li><a routerLink="/main/reservaciones" routerLinkActive="active">Reservaciones</a></li>     
+                <li><a *ngIf="isAdmin" routerLink="/main/usuarios" routerLinkActive="active">Usuarios</a></li>
+                <li><a *ngIf="isAdminOrDueno" routerLink="/main/amenidades" routerLinkActive="active">Amenidades</a> </li>
+                <li><a *ngIf="isAdminOrGuardia" routerLink="/main/bitacoras" routerLinkActive="active">Bitácoras</a></li>
+                <li><a *ngIf="isAnyRole" routerLink="/main/incidentes" routerLinkActive="active">Incidentes</a></li>
+                <li><a *ngIf="isAdminOrDueno" routerLink="/main/listadoAdeudos" routerLinkActive="active">Listado de Adeudos</a></li>
+                <li><a *ngIf="isAdminOrDueno" routerLink="/main/invitarAmigos" routerLinkActive="active">Invitar Amigos</a></li>
+                <li><a *ngIf="isAnyRole" routerLink="/main/reglamentos" routerLinkActive="active">Reglamentos</a></li>
+                <li><a *ngIf="isAdminOrDueno" routerLink="/main/reporteFinanzas" routerLinkActive="active">Reporte de Finanzas</a></li>
+                <li><a *ngIf="isAdminOrDueno" routerLink="/main/reservaciones" routerLinkActive="active">Reservaciones</a></li>     
             </ul>
 
         </nav>

@@ -32,12 +32,12 @@ const createUploader = (subfolder) => {
 
   // 2. Filtro de archivos (opcional, pero recomendado)
   const fileFilter = (req, file, cb) => {
-    const tipos = /jpeg|jpg|png|gif|webp/;
-    const mimetype = tipos.test(file.mimetype);
+    const tipos = /jpeg|jpg|png|gif|webp|pdf/;
+    const mimetype = tipos.test(file.mimetype) || file.mimetype === 'application/pdf';
     if (mimetype) {
       cb(null, true);
     } else {
-      cb(new Error('Solo se permiten imágenes de tipo jpeg, jpg, png, gif o webp'));
+      cb(new Error('Solo se permiten imágenes de tipo jpeg, jpg, png, gif, webp o pdf'));
     }
   };
 

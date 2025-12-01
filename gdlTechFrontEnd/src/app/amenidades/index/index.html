@@ -1,6 +1,7 @@
 <h2>Gestión de Amenidades (Productos)</h2>
 
-<button class="btn btn-primary mb-3" routerLink="/main/amenidades/create">
+<button *ngIf="isAdmin"
+    class="btn btn-primary mb-3" routerLink="/main/amenidades/create">
     <i class="bi bi-plus-circle"></i> Crear Nueva Amenidad
 </button>
 
@@ -47,11 +48,13 @@
 
                 <div>
                     <!-- EDITAR: USANDO RUTA COMPLETA /edit/ID -->
-                    <a class="btn btn-sm btn-warning me-2" 
+                    <a *ngIf="isAdmin"
+                        class="btn btn-sm btn-warning me-2" 
                        [routerLink]="['/main/amenidades/edit', amenidad._id]">
                        <i class="bi bi-pencil"></i> Editar
                     </a>
-                    <button class="btn btn-sm btn-danger" 
+                    <button *ngIf="isAdmin"
+                            class="btn btn-sm btn-danger" 
                             (click)="deleteAmenidad(amenidad._id)">
                        <i class="bi bi-trash"></i> Eliminar
                     </button>
