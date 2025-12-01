@@ -1,1 +1,126 @@
-<p>create works!</p>
+<div class="container mt-4">
+    <button class="btn btn-secondary mb-4" (click)="regresar()">
+        <i class="bi bi-arrow-left"></i> Regresar a Egresos
+    </button>
+
+    <div class="card shadow-lg border-0 rounded-4">
+        <div class="card-header bg-danger text-white">
+            <h3 class="mb-0"><i class="bi bi-receipt"></i> Cargar Nuevo Gasto (Egreso)</h3>
+        </div>
+        <div class="card-body p-4">
+            
+            <form #reporteFormulario="ngForm" (ngSubmit)="submitReporte(reporteFormulario)">
+                
+                <div class="row">
+                    <!-- Columna Izquierda -->
+                    <div class="col-md-6">
+                        
+                        <!-- Concepto -->
+                        <div class="mb-3">
+                            <label for="concepto" class="form-label fw-bold">Concepto / Título del Gasto <span class="text-danger">*</span></label>
+                            <input type="text" 
+                                   id="concepto" 
+                                   name="concepto" 
+                                   class="form-control" 
+                                   [(ngModel)]="reporteForm.concepto" 
+                                   required 
+                                   maxlength="100">
+                        </div>
+                        
+                        <!-- Monto -->
+                        <div class="mb-3">
+                            <label for="monto" class="form-label fw-bold">Monto ($ MXN) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" 
+                                       id="monto" 
+                                       name="monto" 
+                                       class="form-control" 
+                                       [(ngModel)]="reporteForm.monto" 
+                                       required 
+                                       min="0.01" 
+                                       step="0.01">
+                            </div>
+                        </div>
+
+                        <!-- Categoría -->
+                        <div class="mb-3">
+                            <label for="categoria" class="form-label fw-bold">Categoría <span class="text-danger">*</span></label>
+                            <select id="categoria" 
+                                    name="categoria" 
+                                    class="form-select" 
+                                    [(ngModel)]="reporteForm.categoria" 
+                                    required>
+                                <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
+                            </select>
+                        </div>
+                        
+                    </div>
+
+                    <!-- Columna Derecha -->
+                    <div class="col-md-6">
+                        
+                        <!-- Fecha del Gasto -->
+                        <div class="mb-3">
+                            <label for="fecha" class="form-label fw-bold">Fecha en que se realizó el Gasto <span class="text-danger">*</span></label>
+                            <input type="date" 
+                                   id="fecha" 
+                                   name="fecha" 
+                                   class="form-control" 
+                                   [(ngModel)]="reporteForm.fecha" 
+                                   required>
+                        </div>
+
+                        <!-- Evidencia (Archivo) -->
+                        <div class="mb-3">
+                            <label for="evidencia" class="form-label fw-bold">Adjuntar Recibo / Evidencia <span class="text-danger">*</span></label>
+                            <input class="form-control" 
+                                   type="file" 
+                                   id="evidencia" 
+                                   name="evidencia" 
+                                   (change)="onFileSelected($event)" 
+                                   accept="image/*, application/pdf" 
+                                   required>
+                            <div *ngIf="selectedFile" class="mt-2 small text-success">
+                                Archivo seleccionado: {{ selectedFile.name }}
+                            </div>
+                            <div class="form-text">Solo imágenes (JPG, PNG) o PDF.</div>
+                        </div>
+                        
+                        <!-- Tipo de Documento -->
+                        <div class="mb-3">
+                            <label for="tipoDocumento" class="form-label fw-bold">Tipo de Documento</label>
+                            <input type="text" 
+                                   id="tipoDocumento" 
+                                   name="tipoDocumento" 
+                                   class="form-control" 
+                                   [(ngModel)]="reporteForm.tipo_documento" 
+                                   maxlength="50">
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Descripción Completa (Full Width) -->
+                <div class="mb-4">
+                    <label for="descripcion" class="form-label fw-bold">Descripción Completa</label>
+                    <textarea id="descripcion" 
+                              name="descripcion" 
+                              class="form-control" 
+                              [(ngModel)]="reporteForm.descripcion" 
+                              rows="3" 
+                              maxlength="500"></textarea>
+                </div>
+
+                <!-- Botón de Envío -->
+                <button type="submit" 
+                        class="btn btn-danger btn-lg w-100" 
+                        [disabled]="isLoading || reporteFormulario.invalid || !selectedFile">
+                    <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    {{ isLoading ? 'Guardando Gasto...' : 'Guardar Gasto (Egreso)' }}
+                </button>
+
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,1 +1,91 @@
-<p>index works!</p>
+<div class="container mt-4">
+    <h2 class="mb-4 text-danger">Reporte de Egresos (Finanzas)</h2>
+
+    <div class="row mb-4 align-items-end">
+        <!-- Columna 1: Botón Crear -->
+        <div class="col-md-3 d-grid">
+            <a [routerLink]="['/main/reporteFinanzas/create']" class="btn btn-success btn-lg shadow-sm">
+                <i class="bi bi-receipt"></i> Cargar Nuevo Gasto
+            </a>
+        </div>
+
+        <!-- Columna 2: Filtro por Mes -->
+        <div class="col-md-3">
+            <label for="filtroMes" class="form-label fw-bold">Filtrar Mes de Gasto</label>
+            <!-- Input que alimenta el selectedPeriod y llama a filterAndCalculate -->
+            <input type="month" 
+                   id="filtroMes" 
+                   name="selectedPeriod"
+                   class="form-control" 
+                   [(ngModel)]="selectedPeriod" 
+                   (ngModelChange)="filterAndCalculate()">
+        </div>
+
+        <!-- Columna 3: Total Acumulado (Cuadro) -->
+        <div class="col-md-3">
+            <div class="card bg-light border-danger h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-danger mb-1">Egresos Totales (Mes)</h5>
+                    <h3 class="card-text fw-bold">${{ totalEgresos | number:'1.2-2' }} MXN</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna 4: Botón Generar Reporte -->
+        <div class="col-md-3 d-grid">
+            <button class="btn btn-primary btn-lg shadow-sm" (click)="generateReport()">
+                <i class="bi bi-file-earmark-bar-graph"></i> Generar Reporte
+            </button>
+        </div>
+    </div>
+
+    <!-- Indicador de Carga -->
+    <div *ngIf="isLoading" class="text-center p-5">
+        <div class="spinner-border text-danger" role="status"></div>
+        <p class="mt-2">Cargando listado de egresos...</p>
+    </div>
+
+    <!-- Tabla de Registros de Gasto (Usa filteredReports) -->
+    <div *ngIf="!isLoading && filteredReports.length > 0" class="card shadow-lg rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th scope="col">Concepto</th>
+                            <th scope="col">Monto</th>
+                            <th scope="col">Categoría</th>
+                            <th scope="col">Fecha Gasto</th>
+                            <th scope="col">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Itera sobre los reportes filtrados (filteredReports) -->
+                        <tr *ngFor="let reporte of filteredReports" class="align-middle">
+                            <td>{{ reporte.concepto }}</td>
+                            <td class="text-danger fw-bold">${{ reporte.monto | number:'1.2-2' }}</td>
+                            <td><span class="badge bg-secondary">{{ reporte.categoria }}</span></td>
+                            <td>{{ reporte.fecha | date:'mediumDate' }}</td>
+                            
+                            <td>
+                                <a [routerLink]="['/main/reporteFinanzas/show', reporte._id]" class="btn btn-sm btn-secondary me-2">
+                                    <i class="bi bi-eye"></i> Detalle
+                                </a>
+                                <a [routerLink]="['/main/reporteFinanzas/edit', reporte._id]" class="btn btn-sm btn-warning me-2">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </a>
+                                <button class="btn btn-sm btn-danger" (click)="deleteReporte(reporte._id)">
+                                    <i class="bi bi-trash"></i> Eliminar
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div *ngIf="!isLoading && filteredReports.length === 0" class="alert alert-info mt-3">
+        No se encontraron egresos para el período seleccionado.
+    </div>
+</div>
