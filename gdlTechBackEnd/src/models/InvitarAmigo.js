@@ -1,5 +1,5 @@
-// const mongoose = require('mongoose');
-// const { Schema } = mongoose;
+const mongoose = require('mongoose');
+const { Schema } = mongoose;
 
 /**
  * Modelo de InvitarAmigo según el esquema de la base de datos

@@ -35,6 +35,47 @@ const InvitarAmigoSchema = new Schema({
         type: String, 
         required: true 
     },
+    correo_electronico: {
+        type: String,
+        default: ''
+    },
+    proposito_visita: {
+        type: String,
+        enum: ['Visita Personal', 'Entrega de Paquete', 'Servicio Técnico', 'Mantenimiento', 'Otro'],
+        default: 'Visita Personal'
+    },
+    hora_inicio: {
+        type: String,
+        default: ''
+    },
+    hora_fin: {
+        type: String,
+        default: ''
+    },
+    tipo_qr: {
+        type: String,
+        enum: ['uso_unico', 'usos_multiples'],
+        default: 'uso_unico'
+    },
+    fecha_inicio: {
+        type: String,
+        default: ''
+    },
+    fecha_fin: {
+        type: String,
+        default: ''
+    },
+    numero_usos: {
+        type: Number,
+        default: 0
+    },
+    areas_permitidas: [{
+        type: String
+    }],
+    notas_adicionales: {
+        type: String,
+        default: ''
+    },
     estado: { 
         type: String, 
         enum: ['pendiente', 'confirmado', 'cancelado', 'completado'], 
@@ -58,5 +99,4 @@ const InvitarAmigoSchema = new Schema({
     timestamps: true,
     versionKey: false
 });
-
 module.exports = InvitarAmigoSchema;
