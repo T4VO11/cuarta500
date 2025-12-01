@@ -75,7 +75,7 @@ exports.show = async (req, res) => {
     }
 };
 
-// CREATE (usanddo dualWriter)
+// CREATE (usando dualWriter)
 exports.store = async (req, res) => {
     try {
         const {

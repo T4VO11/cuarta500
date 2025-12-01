@@ -1,4 +1,6 @@
-const Usuario = require('../../models/Usuario');
+const LocalUsuario = require('../../models/local/Usuario');
+const AtlasUsuario = require('../../models/atlas/Usuario');
+
 const jwt = require('jsonwebtoken');
 const JsonResponse = require('../../utils/JsonResponse');
 const Encryption = require('../../utils/encryption');
@@ -6,13 +8,17 @@ const mongoose = require('mongoose');
 const { buildImageUrl } = require('../../utils/imageUrlHelper');
 const tokenBlacklist = require('../../utils/tokenBlacklist');
 
+const createDualWriter = require('../../utils/dualWriter');
+const usuarioDW = createDualWriter(LocalUsuario, AtlasUsuario);
+
 /**
- * Obtener todos los usuarios (index)
- * GET /usuarios
+ * Obtener todos los usuarios INDEX LOCAL
+ * GET /usuarios 
+ * READ contra Local ( + rapidez y eficiencia)
  */
 exports.index = async (req, res) => {
     try {
-        const usuarios = await Usuario.find({ condominio_id: 'C500' })
+        const usuarios = await LocalUsuario.find({ condominio_id: 'C500' })
             .sort({ usuario_id: 1 });
         
         // Construir URLs públicas para imágenes
@@ -46,24 +52,25 @@ exports.index = async (req, res) => {
 };
 
 /**
- * Obtener un usuario por ID (show)
+ * Obtener un usuario por ID. SHOW LOCAL 
  * GET /usuarios/:id
  * Acepta tanto ObjectId (_id) como usuario_id (número)
  */
 exports.show = async (req, res) => {
     try {
+        console.log('SHOW id, id_usuario de usuario solicitado:')
         let usuario;
         
         // Intentar buscar por ObjectId primero
         if (mongoose.Types.ObjectId.isValid(req.params.id)) {
-            usuario = await Usuario.findById(req.params.id);
+            usuario = await LocalUsuario.findById(req.params.id);
         }
         
         // Si no se encontró por ObjectId, intentar por usuario_id
         if (!usuario) {
             const usuarioIdNum = parseInt(req.params.id);
             if (!isNaN(usuarioIdNum)) {
-                usuario = await Usuario.findOne({ usuario_id: usuarioIdNum });
+                usuario = await LocalUsuario.findOne({ usuario_id: usuarioIdNum });
             }
         }
 
@@ -100,7 +107,7 @@ exports.show = async (req, res) => {
 };
 
 /**
- * Crear un nuevo usuario (store)
+ * Crear un nuevo usuario STORE CON dualWriter
  * POST /usuarios
  */
 exports.store = async (req, res) => {
@@ -121,7 +128,7 @@ exports.store = async (req, res) => {
         } = req.body;
 
         // Verificar si el usuario_id ya existe
-        const usuarioExistente = await Usuario.findOne({ 
+        const usuarioExistente = await LocalUsuario.findOne({ 
             $or: [
                 { usuario_id },
                 { username },
@@ -152,7 +159,7 @@ exports.store = async (req, res) => {
         }
 
         // Crear nuevo usuario
-        const nuevoUsuario = new Usuario({
+        const payload ={
             usuario_id,
             condominio_id: 'C500',
             username,
@@ -166,11 +173,11 @@ exports.store = async (req, res) => {
             telefono,
             documentos: documentosData,
             perfil_detalle: perfil_detalle ? (typeof perfil_detalle === 'string' ? JSON.parse(perfil_detalle) : perfil_detalle) : {}
-        });
+        };
 
-        await nuevoUsuario.save();
-
-        const usuarioObj = nuevoUsuario.toObject();
+        // Usamos dualWriter para crear en local e intentar en Atlas (si falla, se encola)
+        const nuevoUsuarioLocal = await usuarioDW.create(payload);
+        const usuarioObj = nuevoUsuarioLocal.toObject();
 
         // Construir URLs públicas para imágenes si existen
         if (usuarioObj.documentos?.imagen_perfil_url) {
@@ -192,7 +199,7 @@ exports.store = async (req, res) => {
 };
 
 /**
- * Actualizar un usuario (update)
+ * Actualizar un usuario UPDATE CON dualWriter
  * PUT /usuarios/:id
  * Acepta tanto ObjectId (_id) como usuario_id (número)
  */
@@ -202,14 +209,14 @@ exports.update = async (req, res) => {
         
         // Intentar buscar por ObjectId primero
         if (mongoose.Types.ObjectId.isValid(req.params.id)) {
-            usuario = await Usuario.findById(req.params.id);
+            usuario = await LocalUsuario.findById(req.params.id);
         }
         
         // Si no se encontró por ObjectId, intentar por usuario_id
         if (!usuario) {
             const usuarioIdNum = parseInt(req.params.id);
             if (!isNaN(usuarioIdNum)) {
-                usuario = await Usuario.findOne({ usuario_id: usuarioIdNum });
+                usuario = await LocalUsuario.findOne({ usuario_id: usuarioIdNum });
             }
         }
         
@@ -250,7 +257,7 @@ exports.update = async (req, res) => {
                 }
             }
             
-            const usuarioExistente = await Usuario.findOne(query);
+            const usuarioExistente = await LocalUsuario.findOne(query);
 
             if (usuarioExistente) {
                 return JsonResponse.error(res, 'El username o email ya está en uso', 400);
@@ -275,27 +282,31 @@ exports.update = async (req, res) => {
             }
         }
 
+        //Armamos el objeto plano 'data' para DualWrite
+        const data = {}; 
         // Actualizar campos
-        if (username) usuario.username = username;
-        if (password) usuario.password = password; // Se hasheará automáticamente
-        if (nombre) usuario.nombre = nombre;
-        if (apellido_paterno) usuario.apellido_paterno = apellido_paterno;
-        if (apellido_materno) usuario.apellido_materno = apellido_materno;
-        if (numero_casa !== undefined) usuario.numero_casa = numero_casa;
-        if (email) usuario.email = email;
-        if (telefono) usuario.telefono = telefono;
-        if (documentosData) usuario.documentos = documentosData;
+        if (username) data.username = username;
+        if (password) data.password = password; // Se hasheará automáticamente
+        if (nombre) data.nombre = nombre;
+        if (apellido_paterno) data.apellido_paterno = apellido_paterno;
+        if (apellido_materno) data.apellido_materno = apellido_materno;
+        if (numero_casa !== undefined) data.numero_casa = numero_casa;
+        if (email) data.email = email;
+        if (telefono) data.telefono = telefono;
+        
+        data.documentos = documentosData;
+
         if (perfil_detalle) {
             try {
-                usuario.perfil_detalle = { ...usuario.perfil_detalle, ...JSON.parse(perfil_detalle) };
+                data.perfil_detalle = { ...usuario.perfil_detalle, ...JSON.parse(perfil_detalle) };
             } catch {
-                usuario.perfil_detalle = { ...usuario.perfil_detalle, ...perfil_detalle };
+                data.perfil_detalle = { ...usuario.perfil_detalle, ...perfil_detalle };
             }
         }
 
-        await usuario.save();
-
-        const usuarioObj = usuario.toObject();
+        //dualWrite
+        const updated = await usuarioDW.update(usuario._id, data);
+        const usuarioObj = updated.toObject();
 
         // Construir URLs públicas para imágenes
         if (usuarioObj.documentos?.imagen_perfil_url) {
@@ -327,7 +338,7 @@ exports.update = async (req, res) => {
 };
 
 /**
- * Eliminar un usuario (destroy)
+ * Eliminar un usuario DESTROY CON DUALWRITE
  * DELETE /usuarios/:id
  * Acepta tanto ObjectId (_id) como usuario_id (número)
  */
@@ -335,29 +346,26 @@ exports.destroy = async (req, res) => {
     try {
         let usuario;
         
-        // Intentar buscar por ObjectId primero
-        if (mongoose.Types.ObjectId.isValid(req.params.id)) {
-            usuario = await Usuario.findById(req.params.id);
-            if (usuario) {
-                await Usuario.findByIdAndDelete(req.params.id);
-            }
-        }
-        
-        // Si no se encontró por ObjectId, intentar por usuario_id
+        //Modificamos el metodo de busqueda para poder aplicar DualWrite
+
+        // Intentar buscar por ObjectId
+        if (mongoose.Types.ObjectId.isValid(req.params.id)) 
+            usuario = await LocalUsuario.findById(req.params.id);
+
+        //Sino biscamos por usuario_id
         if (!usuario) {
-            const usuarioIdNum = parseInt(req.params.id);
-            if (!isNaN(usuarioIdNum)) {
-                usuario = await Usuario.findOne({ usuario_id: usuarioIdNum });
-                if (usuario) {
-                    await Usuario.findByIdAndDelete(usuario._id);
-                }
-            }
+            const idNum = parseInt(req.params.id);
+            if (!isNaN(idNum))
+                usuario = await LocalUsuario.findOne({ usuario_id: idNum});
         }
         
         // Validar que el usuario exista
         if (!usuario) {
             return JsonResponse.notFound(res, 'Usuario no encontrado');
         }
+
+        // dualWrite
+        await usuarioDW.delete(usuario._id);
 
         return JsonResponse.success(res, null, 'Usuario eliminado exitosamente');
     } catch (error) {
