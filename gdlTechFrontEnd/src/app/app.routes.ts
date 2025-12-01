@@ -249,16 +249,13 @@ export const routes: Routes = [
 
       // REGLAMENTOS: Todos deben poder leerlos
       { 
-         path: 'reglamentos',
-         canActivate: [roleGuard],
-         data: { roles: ['administrador', 'guardia', 'dueño'] },
-         children: [
-             { path: '', redirectTo: 'show/6910f476625ce8db61ec8f57', pathMatch: 'full' }, // Ajusté ruta
-             { path: 'create', component: ReglamentosCreateComponent }, // Idealmente restringir create a Admin
-             { path: ':id/edit', component: ReglamentosEditComponent }, 
-             { path: ':id', component: ReglamentosShowComponent }
-         ]
-      },
+            path: 'reglamentos', 
+            redirectTo: 'reglamentos/6910f476625ce8db61ec8f57', // ID de ejemplo del reglamento activo
+            pathMatch: 'full' 
+        },
+        { path: 'reglamentos/create', component: ReglamentosCreateComponent }, 
+        { path: 'reglamentos/:id/edit', component: ReglamentosEditComponent }, 
+        { path: 'reglamentos/:id', component: ReglamentosShowComponent },
       
       // Ruta por defecto interna (si alguien pone solo /main)
       {path: '', component: DashboardRedirectComponent, pathMatch: 'full' }
