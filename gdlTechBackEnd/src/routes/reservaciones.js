@@ -22,5 +22,11 @@ router.post('/', authMiddleware, requireAdmin, validarReservacion, reservaciones
 router.put('/:id', authMiddleware, requireAdmin, validarReservacion, reservacionesController.update);
 router.delete('/:id', authMiddleware, requireAdmin, reservacionesController.destroy);
 
+//Ruta para el pago de terraza 
+router.post('/crear-pago', reservacionesController.crearSesionPago);
+
+//Ruta para la confirmacion de pagos 
+router.post('/confirmar-pago', reservacionesController.confirmarPago);
+
 module.exports = router;
 
