@@ -1,12 +1,12 @@
 <div class="container mt-4">
-    <button class="btn btn-secondary mb-4" (click)="regresar()">
+    <button class="btn btn-success mb-4" (click)="regresar()">
         <i class="bi bi-arrow-left"></i> Regresar a Lista de Bitácoras
     </button>
 
     <div *ngIf="isLoading" class="alert alert-info">Cargando detalles del registro</div>
 
     <div *ngIf="bitacora" class="card shadow-lg border-0 rounded-4">
-        <div class="card-header bg-dark text-white">
+        <div class="card-header bg-success text-white">
             <h3 class="mb-0">Registro de Bitácora #{{ bitacora.registro_id }}</h3>
         </div>
         <div class="card-body p-4">
@@ -14,7 +14,7 @@
             <div class="row">
                 <!-- Columna 1: Información General -->
                 <div class="col-md-6 border-end">
-                    <h4 class="text-primary">Detalle del Evento</h4>
+                    <h4 class="text-dark">Detalle del Evento</h4>
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item"><strong>Tipo de Registro:</strong> <span class="badge bg-secondary">{{ bitacora.tipo_registro | titlecase }}</span></li>
                         <li class="list-group-item"><strong>Fecha y Hora:</strong> {{ bitacora.fecha_hora | date: 'medium' }}</li>
@@ -25,7 +25,7 @@
                 
                 <!-- Columna 2: Detalle de Acceso -->
                 <div class="col-md-6">
-                    <h4 class="text-primary">Detalles de Acceso</h4>
+                    <h4 class="text-dark">Detalles de Acceso</h4>
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item"><strong>Método de Acceso:</strong> {{ bitacora.detalle_acceso?.metodo || 'N/A' }}</li>
                         <li class="list-group-item"><strong>No. de Casa:</strong> {{ bitacora.detalle_acceso?.numeroCasa || 'N/A' }}</li>

@@ -38,3 +38,72 @@ main {
     padding: 20px; /* Espacio para que el contenido no se pegue a los bordes */
     overflow-y: auto; /* Si el contenido es largo, solo se desplaza esta área, no toda la página */
 }
+
+
+/* ESTILOS DEL SIDEBAR */
+
+/* 1. Estilo General del Menú */
+.sidebar-menu {
+    padding: 0;
+    list-style: none; /* Quitamos los puntos de la lista */
+    margin-top: 0;
+    background-color: #fcf3e6;
+}
+
+/* 2. Estilo del Enlace (El Bloque) */
+.sidebar-menu .nav-item {
+    margin-bottom: 5px; /* Espacio entre los ítems */
+}
+
+.sidebar-menu .nav-link {
+    display: flex; /* Usamos flex para alinear el ícono y el texto */
+    align-items: center;
+    padding: 10px 15px;
+    color: var(--bs-gray-800); /* Texto oscuro por defecto */
+    text-decoration: none;
+    border-radius: var(--bs-border-radius); /* Bordes redondeados */
+    transition: background-color 0.2s, color 0.2s;
+    font-weight: 500;
+}
+
+/* 3. Estilo del Ícono */
+.sidebar-menu .nav-link i {
+    margin-right: 10px; /* Separación del ícono al texto */
+    font-size: 1.1rem;
+    color: var(--bs-secondary); /* Color secundario para íconos inactivos */
+}
+
+/* 4. Efectos Hover y Activo */
+
+/* Efecto al pasar el mouse*/
+.sidebar-menu .nav-link:hover {
+    background-color: rgba(var(--bs-success-rgb), 0.1);/* Fondo gris claro */
+    color: var(--bs-secondary); /* Texto del color primario */
+}
+
+/* Estilo del Enlace Activo (Ruta actual)*/
+.sidebar-menu .nav-link.active {
+    background-color: rgba(var(--bs-success-rgb), 0.5); /* Fondo del color primario (ej. tu teal) */
+    color: black; /* Texto blanco en el activo */
+    font-weight: 700;
+}
+
+.sidebar-menu .nav-link.active i {
+    color: white; /* El ícono también se pone blanco en el estado activo */
+}
+
+/* 5. Estilo del Logo en la Barra Lateral */
+.sidebar-header {
+    padding: 10px 10px; /* Más espacio alrededor del logo */
+    /*border-bottom: 1px solid var(--bs-gray-300); /* Línea divisoria sutil */
+    margin-bottom: 0;
+    text-align: center; /* Asegura que el logo esté centrado */
+}
+
+.sidebar-logo {
+    max-width: 100%; /* El logo no excederá el ancho del sidebar */
+    height: auto;
+    max-height: 170px; /* Limita la altura del logo para que no sea muy grande */
+    display: block; /* Para que el margin: auto funcione si es necesario */
+    margin: 0 auto; /* Centrar la imagen dentro del sidebar-header */
+}

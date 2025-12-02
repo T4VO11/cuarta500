@@ -1,9 +1,9 @@
 <div class="container mt-4">
 
-    <div *ngIf="isLoading" class="alert alert-info">Cargando reglamento...</div>
+    <div *ngIf="isLoading" class="alert alert-success">Cargando reglamento...</div>
 
     <div *ngIf="reglamento" class="card shadow-lg border-0 rounded-4">
-        <div class="card-header bg-dark text-white">
+        <div class="card-header bg-success text-white">
             <h3 class="mb-0">Reglamento: {{ reglamento.nombre }}</h3>
         </div>
         <div class="card-body p-4">
@@ -13,7 +13,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
                 
                 <!-- Botón de Descarga -->
-                <button class="btn btn-primary btn-lg" (click)="descargarPdf()">
+                <button class="btn btn-success btn-lg" (click)="descargarPdf()">
                     <i class="bi bi-download"></i> Descargar PDF
                 </button>
 
@@ -39,8 +39,8 @@
             </div>
 
         </div>
-        <div class="card-footer text-muted small">
+        <!-- <div class="card-footer text-muted small">
             Estado: {{ reglamento.estado | titlecase }} | ID en BD: {{ reglamento._id }}
-        </div>
+        </div> -->
     </div>
 </div>

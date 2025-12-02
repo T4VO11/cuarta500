@@ -1,6 +1,6 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <button class="btn btn-secondary" (click)="regresar()">
+        <button class="btn btn-success" (click)="regresar()">
             <i class="bi bi-arrow-left"></i> Regresar a Lista de Incidentes
         </button>
         <!-- Botón para editar -->
@@ -9,10 +9,10 @@
         </a> -->
     </div>
 
-    <div *ngIf="isLoading" class="alert alert-info">Cargando detalles del incidente...</div>
+    <div *ngIf="isLoading" class="alert alert-success">Cargando detalles del incidente...</div>
 
     <div *ngIf="incidente" class="card shadow-lg border-0 rounded-4">
-        <div class="card-header bg-dark text-white">
+        <div class="card-header bg-success text-white">
             <h3 class="mb-0">Incidente #{{ incidente.incidente_id }}</h3>
         </div>
         <div class="card-body p-4">
@@ -20,7 +20,7 @@
             <div class="row">
                 <!-- Columna 1: Información Principal -->
                 <div class="col-md-6 border-end">
-                    <h4 class="text-primary">Detalle del Reporte</h4>
+                    <h4 class="text-dark">Detalle del Reporte</h4>
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item"><strong>Asunto:</strong> {{ incidente.asunto }}</li>
                         <li class="list-group-item"><strong>Categoría:</strong> <span class="badge bg-secondary">{{ incidente.categoria }}</span></li>
@@ -30,7 +30,7 @@
                 
                 <!-- Columna 2: Fechas y Residente -->
                 <div class="col-md-6">
-                    <h4 class="text-primary">Datos de la Gestión</h4>
+                    <h4 class="text-dark">Datos de la Gestión</h4>
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item"><strong>Reportado por Usuario ID:</strong> {{ incidente.usuario_id }}</li>
                         <li class="list-group-item"><strong>Casa Afectada:</strong> {{ incidente.numeroCasa }}</li>

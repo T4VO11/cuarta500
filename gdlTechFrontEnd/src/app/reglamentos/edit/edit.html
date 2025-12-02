@@ -1,15 +1,15 @@
 <div class="container mt-4">
 
-    <button class="btn btn-secondary mb-4" (click)="regresar()" [disabled]="isSaving">
+    <button class="btn btn-success mb-4" (click)="regresar()" [disabled]="isSaving">
         <i class="bi bi-arrow-left"></i> Cancelar y Regresar
     </button>
     
     <div *ngIf="isLoading" class="alert alert-info">Cargando reglamento para edición...</div>
 
     <div *ngIf="!isLoading" class="card shadow-lg border-0 rounded-4">
-        <div class="card-header bg-warning text-dark">
+        <div class="card-header bg-success text-white">
             <h3 class="mb-0">Edición del Reglamento: {{ reglamentoForm.nombre }}</h3>
-            <p class="small mb-0">ID: {{ reglamentoForm._id }}</p>
+            <!-- <p class="small mb-0">ID: {{ reglamentoForm._id }}</p> -->
         </div>
         <div class="card-body p-4">
             

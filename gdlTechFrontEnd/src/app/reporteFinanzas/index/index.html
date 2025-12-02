@@ -1,5 +1,5 @@
 <div class="container mt-4">
-    <h2 class="mb-4 text-danger">Reporte de Egresos (Finanzas)</h2>
+    <h2 class="mb-4 text-dark">Reporte de finanzas</h2>
 
     <div class="row mb-4 align-items-end">
         <!-- Columna 1: Botón Crear -->
@@ -24,9 +24,9 @@
 
         <!-- Columna 3: Total Acumulado (Cuadro) -->
         <div class="col-md-3">
-            <div class="card bg-light border-danger h-100 shadow-sm">
+            <div class="card bg-light border-success h-100 shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title text-danger mb-1">Egresos Totales (Mes)</h5>
+                    <h5 class="card-title text-dark mb-1">Egresos Totales (Mes)</h5>
                     <h3 class="card-text fw-bold">${{ totalEgresos | number:'1.2-2' }} MXN</h3>
                 </div>
             </div>
@@ -34,7 +34,7 @@
 
         <!-- Columna 4: Botón Generar Reporte -->
         <div class="col-md-3 d-grid">
-            <button class="btn btn-primary btn-lg shadow-sm" (click)="generateReport()">
+            <button class="btn btn-success btn-lg shadow-sm" (click)="generateReport()">
                 <i class="bi bi-file-earmark-bar-graph"></i> Generar Reporte
             </button>
         </div>
@@ -51,7 +51,7 @@
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
-                    <thead class="table-dark">
+                    <thead class="table-success">
                         <tr>
                             <th scope="col">Concepto</th>
                             <th scope="col">Monto</th>
@@ -88,7 +88,7 @@
         </div>
     </div>
     
-    <div *ngIf="!isLoading && filteredReports.length === 0" class="alert alert-info mt-3">
+    <div *ngIf="!isLoading && filteredReports.length === 0" class="alert alert-success mt-3">
         No se encontraron egresos para el período seleccionado.
     </div>
 </div>

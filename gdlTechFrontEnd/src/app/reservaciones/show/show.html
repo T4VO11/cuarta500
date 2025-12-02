@@ -1,19 +1,19 @@
 <div class="container mt-4">
-    <button class="btn btn-secondary mb-4" (click)="regresar()">
+    <button class="btn btn-success mb-4" (click)="regresar()">
         <i class="bi bi-arrow-left"></i> Regresar a Lista de Reservaciones
     </button>
 
     <div *ngIf="isLoading" class="alert alert-info">Cargando detalles de la reservación...</div>
 
     <div *ngIf="reservacion" class="card shadow-lg border-0 rounded-4">
-        <div class="card-header bg-dark text-white">
+        <div class="card-header bg-success text-white">
             <h3 class="mb-0">Detalle de Reservación #{{ reservacion.reservacion_id }}</h3>
         </div>
         <div class="card-body p-4">
             
             <div class="row">
                 <div class="col-md-6 border-end">
-                    <h4 class="text-primary">Información del Evento</h4>
+                    <h4 class="text-dark">Información del Evento</h4>
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item"><strong>Residente:</strong> {{ reservacion.nombre_residente }}</li>
                         <li class="list-group-item"><strong>Teléfono:</strong> {{ reservacion.telefono }}</li>
@@ -23,7 +23,7 @@
                 </div>
                 
                 <div class="col-md-6">
-                    <h4 class="text-primary">Estados y Montos</h4>
+                    <h4 class="text-dark">Estados y Montos</h4>
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item"><strong>Estado General:</strong> <span class="badge bg-secondary">{{ reservacion.estado | titlecase }}</span></li>
                         <li class="list-group-item"><strong>Estado de Pago:</strong> <span class="badge" [ngClass]="{'bg-success': reservacion.estado_pago === 'pagado', 'bg-warning text-dark': reservacion.estado_pago === 'pendiente'}">{{ reservacion.estado_pago | titlecase }}</span></li>

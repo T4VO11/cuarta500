@@ -1,11 +1,11 @@
 <div class="container mt-5">
     <!-- Botón de Regreso -->
-    <button class="btn btn-secondary mb-4" (click)="regresar()">
+    <button class="btn btn-success mb-4" (click)="regresar()">
         <i class="bi bi-arrow-left"></i> Regresar a Bitácoras
     </button>
 
     <div class="card shadow-lg border-0 rounded-4">
-        <div class="card-header bg-primary text-white p-4">
+        <div class="card-header bg-success text-white p-4">
             <h3 class="mb-0"><i class="bi bi-shield-fill"></i> Puesto de Guardia: Registro Manual de Acceso</h3>
         </div>
         
@@ -14,7 +14,7 @@
                 
                 <!-- SECCIÓN 1: Control de Pluma y Acción -->
                 <div class="mb-5 p-3 bg-light rounded shadow-sm text-center">
-                    <h5 class="text-primary mb-3">Control de Acceso (Pluma)</h5>
+                    <h5 class="text-dark mb-3">Control de Acceso (Pluma)</h5>
                     <div class="d-flex justify-content-center gap-3">
                         <button type="button" class="btn btn-success btn-lg" (click)="simularPluma('subir')" [disabled]="isLoading">
                             <i class="bi bi-arrow-up-circle-fill"></i> Pluma SUBIR (Entrada)
@@ -69,7 +69,7 @@
                 <hr class="my-5">
 
                 <!-- SECCIÓN 2: DETALLE DEL VISITANTE (detalle_acceso) -->
-                <h4 class="mb-4 text-primary"><i class="bi bi-person-badge"></i> Datos del Visitante</h4>
+                <h4 class="mb-4 text-dark"><i class="bi bi-person-badge"></i> Datos del Visitante</h4>
                 <div class="row g-4">
                     
                     <!-- nombre_visitante -->
@@ -101,7 +101,7 @@
                 <hr class="my-5">
 
                 <!-- SECCIÓN 3: DETALLE DEL VEHÍCULO (vehiculo) -->
-                <h4 class="mb-4 text-primary"><i class="bi bi-car-front-fill"></i> Datos del Vehículo (Opcional)</h4>
+                <h4 class="mb-4 text-dark"><i class="bi bi-car-front-fill"></i> Datos del Vehículo</h4>
                 <div class="row g-4">
                     
                     <!-- modelo -->
@@ -124,7 +124,7 @@
             </div>
 
             <div class="card-footer p-4 d-flex justify-content-end">
-                <button type="submit" class="btn btn-primary btn-lg" [disabled]="isLoading">
+                <button type="submit" class="btn btn-success btn-lg" [disabled]="isLoading">
                     <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                     <i *ngIf="!isLoading" class="bi bi-save"></i> 
                     {{ isLoading ? 'Registrando...' : 'Registrar Acceso' }}

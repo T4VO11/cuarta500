@@ -1,5 +1,5 @@
 <div class="container mt-4">
-    <h2 class="mb-4 text-primary">Gestión de Adeudos y Pagos</h2>
+    <h2 class="mb-4 text-dark">Gestión de Adeudos y Pagos</h2>
 
     <div class="row mb-4">
         <!-- Columna 1: Botón de Pago -->
@@ -32,7 +32,7 @@
         </div>
     </div>
 
-    <!-- 🚨 CORRECCIÓN: Usar allAdeudos.length en lugar de adeudos.length -->
+    <!-- Usar allAdeudos.length en lugar de adeudos.length -->
     <div *ngIf="allAdeudos.length === 0 && !isLoading" class="alert alert-warning" role="alert">
         No hay registros de pagos disponibles.
     </div>
@@ -50,7 +50,7 @@
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
-                    <thead class="table-dark">
+                    <thead class="table-success">
                         <tr>
                             <th scope="col">Transacción ID</th>
                             <th scope="col">Usuario / Casa</th>

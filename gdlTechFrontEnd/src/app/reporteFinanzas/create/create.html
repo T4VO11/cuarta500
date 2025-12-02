@@ -1,10 +1,10 @@
 <div class="container mt-4">
-    <button class="btn btn-secondary mb-4" (click)="regresar()">
+    <button class="btn btn-success mb-4" (click)="regresar()">
         <i class="bi bi-arrow-left"></i> Regresar a Egresos
     </button>
 
     <div class="card shadow-lg border-0 rounded-4">
-        <div class="card-header bg-danger text-white">
+        <div class="card-header bg-success text-white">
             <h3 class="mb-0"><i class="bi bi-receipt"></i> Cargar Nuevo Gasto (Egreso)</h3>
         </div>
         <div class="card-body p-4">
@@ -114,7 +114,7 @@
 
                 <!-- Botón de Envío -->
                 <button type="submit" 
-                        class="btn btn-danger btn-lg w-100" 
+                        class="btn btn-success btn-lg w-100" 
                         [disabled]="isLoading || reporteFormulario.invalid || !selectedFile">
                     <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                     {{ isLoading ? 'Guardando Gasto...' : 'Guardar Gasto (Egreso)' }}

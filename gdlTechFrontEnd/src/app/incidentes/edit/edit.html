@@ -1,13 +1,13 @@
 <div class="container mt-4">
     <!-- Botón de Regreso -->
-    <button class="btn btn-secondary mb-4" (click)="regresar()">
+    <button class="btn btn-success mb-4" (click)="regresar()">
         <i class="bi bi-arrow-left"></i> Regresar a Lista de Incidentes
     </button>
 
-    <div *ngIf="!incidenteForm._id" class="alert alert-info">Cargando datos del incidente...</div>
+    <div *ngIf="!incidenteForm._id" class="alert alert-success">Cargando datos del incidente...</div>
 
     <div *ngIf="incidenteForm._id" class="card shadow-lg border-0 rounded-4">
-        <div class="card-header bg-warning text-dark">
+        <div class="card-header bg-success text-white">
             <h3 class="mb-0">Editar Incidente #{{ incidenteForm.incidente_id }}</h3>
         </div>
         <div class="card-body p-4">
@@ -31,7 +31,7 @@
                     </div>
                 </div>
                 
-                <!-- 🚨 CAMBIO APLICADO: Ahora muestra el nombre de quien reporta (read-only) -->
+                <!-- muestra el nombre de quien reporta (read-only) -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
                         <label class="form-label">Reportado por:</label>
@@ -57,7 +57,7 @@
                 </div>
                 
                 <div class="d-flex justify-content-end">
-                    <button type="submit" class="btn btn-warning btn-lg" [disabled]="incidenteFormRef.invalid">
+                    <button type="submit" class="btn btn-success btn-lg" [disabled]="incidenteFormRef.invalid">
                         <i class="bi bi-save"></i> Guardar Cambios
                     </button>
                 </div>

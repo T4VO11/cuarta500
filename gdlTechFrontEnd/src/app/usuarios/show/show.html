@@ -1,5 +1,5 @@
 <div class="container mt-4">
-    <button class="btn btn-secondary mb-4" (click)="regresar()">
+    <button class="btn btn-success mb-4" (click)="regresar()">
         <i class="bi bi-arrow-left"></i> Regresar a Lista de Usuarios
     </button>
 
@@ -7,7 +7,7 @@
     <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
 
     <div *ngIf="usuario" class="card shadow-lg">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-success text-white">
             <h3 class="mb-0">Detalle Completo del Usuario: {{ usuario.nombre }} {{ usuario.apellido_paterno }}</h3>
         </div>
         <div class="card-body">
@@ -47,7 +47,7 @@
                             <a *ngIf="usuario.documentos?.imagen_ine_url" 
                                 [href]="usuario.documentos.imagen_ine_url" 
                                 target="_blank" 
-                                class="btn btn-sm btn-info text-white ms-2">Ver Documento</a>
+                                class="btn btn-sm btn-success text-white ms-2">Ver Documento</a>
                             <span *ngIf="!usuario.documentos?.imagen_ine_url">No disponible</span>
                         </li>
                     </ul>
@@ -55,8 +55,8 @@
             </div>
 
         </div>
-        <div class="card-footer text-muted">
+        <!-- <div class="card-footer text-muted">
              Usuario creado en: {{ usuario.createdAt | date:'short' }}
-        </div>
+        </div> -->
     </div>
 </div>

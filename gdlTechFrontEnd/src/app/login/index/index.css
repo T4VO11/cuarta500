@@ -1,0 +1,51 @@
+.sidebar-logo {
+    max-width: 100%; /* El logo no excederá el ancho del sidebar */
+    height: auto;
+    max-height: 200px; /* Limita la altura del logo para que no sea muy grande */
+    display: block; /* Para que el margin: auto funcione si es necesario */
+    margin: 0 auto; /* Centrar la imagen dentro del sidebar-header */
+}
+
+.card {
+ background-color: #fcf3e6;
+}
+
+/* 1. Asegurar que el HTML y Body ocupen TODA la ventana */
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+/* 2. Usar Flexbox para centrar el contenido del Body */
+body {
+    display: flex; 
+    
+    /* Centra el contenido verticalmente (arriba/abajo) */
+    align-items: center; 
+    
+    /* Centra el contenido horizontalmente (izquierda/derecha) */
+    justify-content: center; 
+}
+
+/* 3. Asegurar que el contenedor principal (container) no interfiera */
+.container {
+    /* El container debe poder encogerse si el contenido es grande, 
+       pero no debe romper el centrado del body. */
+    width: 100%;
+    max-width: 1140px; /* O el max-width que uses en tu proyecto */
+    /* ¡Eliminamos el margen superior que pusiste en el HTML! */
+    margin-top: 100px 
+}
+
+/* Puedes crear una clase custom para reducirlo aún más */
+.btn-login-small {
+    /* Reducimos el padding estándar (ej. 8px arriba/abajo, 15px lados) */
+    padding: 6px 12px; 
+    /* Reducimos el tamaño de la fuente */
+    font-size: 0.9rem; 
+}
+
+/* Centra el botón dentro del formulario */
+.card-body form {
+    text-align: center;
+}

@@ -1,26 +1,72 @@
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
 <Body>
-<header class="navbar navbar-expand-lg navbar-dark bg-dark p-3">
+<header class="navbar navbar-expand-lg navbar-dark bg-dark bg-opacity-10 p-3">
     <div class="container-fluid">
-        <a class="navbar-brand" routerLink="/main">CUARTA 500 | Residencial</a>
-            <button class="btn btn-danger" (click)="cerrarSesion()">
+        <a class="navbar-brand text-dark" routerLink="/main">CUARTA 500 | Residencial</a>
+            <button class="btn btn-outline-success btn-opacity-25"  (click)="cerrarSesion()">
                 <i class="bi bi-box-arrow-right"></i> Cerrar Sesión 
             </button>
     </div>
 </header>
 
-<main> <div class="main-content-wrapper"> <nav class="sidebar-menu">
-    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <!-- Links para las tablas principales -->
-                <li><a *ngIf="isAdmin" routerLink="/main/usuarios" routerLinkActive="active">Usuarios</a></li>
-                <li><a *ngIf="isAdminOrDueno" routerLink="/main/amenidades" routerLinkActive="active">Amenidades</a> </li>
-                <li><a *ngIf="isAdminOrGuardia" routerLink="/main/bitacoras" routerLinkActive="active">Bitácoras</a></li>
-                <li><a *ngIf="isAnyRole" routerLink="/main/incidentes" routerLinkActive="active">Incidentes</a></li>
-                <li><a *ngIf="isAdminOrDueno" routerLink="/main/listadoAdeudos" routerLinkActive="active">Listado de Adeudos</a></li>
-                <li><a *ngIf="isAdminOrDueno" routerLink="/main/invitarAmigos" routerLinkActive="active">Invitar Amigos</a></li>
-                <li><a *ngIf="isAnyRole" routerLink="/main/reglamentos" routerLinkActive="active">Reglamentos</a></li>
-                <li><a *ngIf="isAdminOrDueno" routerLink="/main/reporteFinanzas" routerLinkActive="active">Reporte de Finanzas</a></li>
-                <li><a *ngIf="isAdminOrDueno" routerLink="/main/reservaciones" routerLinkActive="active">Reservaciones</a></li>     
-            </ul>
+<main> 
+    <div class="main-content-wrapper"> 
+        <nav class="sidebar-menu mb-2 mb-lg-0 ">
+            <div class="sidebar-header text-center">
+    <a class="logo-link">
+        <img src="assets/img/logo.png" 
+             alt="Logo C500" 
+             class="sidebar-logo">
+    </a>
+</div>
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0 sidebar-menu">
+    <li class="nav-item">
+        <a *ngIf="isAdmin" routerLink="/main/usuarios" routerLinkActive="active" class="nav-link">
+            <i class="bi bi-person-circle"></i> Usuarios
+        </a>
+    </li>
+    <li class="nav-item">
+        <a *ngIf="isAdminOrDueno" routerLink="/main/amenidades" routerLinkActive="active" class="nav-link">
+            <i class="bi bi-tree"></i> Amenidades
+        </a> 
+    </li>
+    <li class="nav-item">
+        <a *ngIf="isAdminOrGuardia" routerLink="/main/bitacoras" routerLinkActive="active" class="nav-link">
+            <i class="bi bi-journal-text"></i> Bitácoras
+        </a>
+    </li>
+    <li class="nav-item">
+        <a *ngIf="isAnyRole" routerLink="/main/incidentes" routerLinkActive="active" class="nav-link">
+            <i class="bi bi-exclamation-octagon"></i> Incidentes
+        </a>
+    </li>
+    <li class="nav-item">
+        <a *ngIf="isAdminOrDueno" routerLink="/main/listadoAdeudos" routerLinkActive="active" class="nav-link">
+            <i class="bi bi-wallet2"></i> Listado de Adeudos
+        </a>
+    </li>
+    <!-- <li class="nav-item">
+        <a *ngIf="isAdminOrDueno" routerLink="/main/invitarAmigos" routerLinkActive="active" class="nav-link">
+            <i class="bi bi-people"></i> Invitar Amigos
+        </a>
+    </li> -->
+    <li class="nav-item">
+        <a *ngIf="isAnyRole" routerLink="/main/reglamentos" routerLinkActive="active" class="nav-link">
+            <i class="bi bi-file-earmark-ruled"></i> Reglamentos
+        </a>
+    </li>
+    <li class="nav-item">
+        <a *ngIf="isAdminOrDueno" routerLink="/main/reporteFinanzas" routerLinkActive="active" class="nav-link">
+            <i class="bi bi-graph-up"></i> Reporte de Finanzas
+        </a>
+    </li>
+    <li class="nav-item">
+        <a *ngIf="isAdminOrDueno" routerLink="/main/reservaciones" routerLinkActive="active" class="nav-link">
+            <i class="bi bi-calendar-check"></i> Reservaciones
+        </a>
+    </li>
+</ul>
 
         </nav>
         <div class="content-area">
@@ -29,7 +75,7 @@
     </div>
 </main>
 
-<footer class="bg-dark text-white text-center p-3">
-    &copy; 2024 CUARTA 500 | Residencial. Todos los derechos reservados.
+<footer class="bg-dark bg-opacity-10 text-dark text-center p-3">
+    &copy; 2025 CUARTA 500 | Residencial. Todos los derechos reservados.
 </footer>
 </Body>
