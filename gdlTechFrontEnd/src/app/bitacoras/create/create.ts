@@ -87,10 +87,10 @@ export class BitacorasCreateComponent {
     }
     
     // Validar archivo de identificación
-    if (!this.selectedFileINE) {
-        alert('Debes adjuntar la Foto de Identificación (INE/Licencia).');
-        return;
-    }
+    // if (!this.selectedFileINE) {
+    //     alert('Debes adjuntar la Foto de Identificación (INE/Licencia).');
+    //     return;
+    // }
     
     this.isLoading = true;
     
@@ -117,7 +117,7 @@ export class BitacorasCreateComponent {
     formData.append('vehiculo', JSON.stringify(this.bitacoraForm.vehiculo));
     
     // 3. Adjuntar el archivo de identificación (INE)
-    formData.append('imagen_ine', this.selectedFileINE, this.selectedFileINE.name);
+    // formData.append('imagen_ine', this.selectedFileINE, this.selectedFileINE.name);
 
 
     this.bitacoraService.createBitacora(formData).subscribe({

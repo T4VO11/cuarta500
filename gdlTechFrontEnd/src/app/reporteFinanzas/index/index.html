@@ -42,14 +42,14 @@
 
     <!-- Indicador de Carga -->
     <div *ngIf="isLoading" class="text-center p-5">
-        <div class="spinner-border text-danger" role="status"></div>
+        <div class="spinner-border text-dark" role="status"></div>
         <p class="mt-2">Cargando listado de egresos...</p>
     </div>
 
     <!-- Tabla de Registros de Gasto (Usa filteredReports) -->
     <div *ngIf="!isLoading && filteredReports.length > 0" class="card shadow-lg rounded-4">
         <div class="card-body p-0">
-            <div class="table-responsive">
+            <div class="table-responsive table-scrollable">
                 <table class="table table-hover mb-0">
                     <thead class="table-success">
                         <tr>

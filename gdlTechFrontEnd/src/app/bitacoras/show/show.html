@@ -42,8 +42,8 @@
                     <div *ngIf="getImagenUrl(bitacora)">
                         <h5 class="small text-muted">Foto de Acceso / INE</h5>
                        <img *ngIf="bitacora.detalle_acceso?.imagen_ine_url" 
-     [src]="getImagenUrl(bitacora.detalle_acceso.imagen_ine_url)" 
-     alt="INE" class="img-fluid">
+                          [src]="getImagenUrl(bitacora.detalle_acceso.imagen_ine_url)" 
+                             alt="INE" class="img-fluid">
 
                     </div>
                     <div *ngIf="!getImagenUrl(bitacora)">

@@ -48,8 +48,8 @@
     <!-- Tabla de Registros de Pago (Usa filteredAdeudos) -->
     <div *ngIf="!isLoading && filteredAdeudos.length > 0" class="card shadow-lg rounded-4">
         <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
+            <div class="table-responsive table-scrollable">
+                <table class="table table-hover  mb-0">
                     <thead class="table-success">
                         <tr>
                             <th scope="col">Transacción ID</th>
@@ -67,7 +67,7 @@
                             <td>{{ adeudo.transaccion_id }}</td>
                             <td>
                                 <strong>{{ adeudo.nombre }}</strong> <br>
-                                <span class="text-muted">Casa {{ adeudo.numero_casa }} (ID: {{ adeudo.usuario_id }})</span>
+                                <!-- <span class="text-muted">Casa {{ adeudo.numero_casa }} (ID: {{ adeudo.usuario_id }})</span> -->
                             </td>
                             <td>
                                 <span class="badge bg-primary">{{ adeudo.periodo_cubierto }}</span>

@@ -1,0 +1,17 @@
+.table-scrollable {
+    /* CLAVE 1: Define la altura máxima que la tabla puede alcanzar. */
+    /* Usamos 400px como ejemplo, tú ajusta el valor que mejor te funcione. */
+    max-height: 400px; 
+    
+    /* CLAVE 2: Hace que aparezca la barra de desplazamiento vertical 
+       SOLO si el contenido excede la max-height. */
+    overflow-y: auto; 
+    
+    /* Importante para evitar problemas de rendering del borde/sombra */
+    overflow-x: hidden; 
+
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
