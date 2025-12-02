@@ -54,6 +54,44 @@ export class IndexComponent implements OnInit {
     }
   }
 
+  pagarReservacion(reservacion: any): void {
+    if (!confirm(`¿Deseas proceder al pago de la reservación #${reservacion.reservacion_id}?`)) {
+      return;
+    }
+
+    // 1. Preparar los extras
+    // Tu reserva guarda objetos {nombre, costo}, pero el backend de pago espera solo nombres ["Mesas", "Sonido"]
+    const extrasNombres = reservacion.servicios_extra 
+        ? reservacion.servicios_extra.map((s: any) => s.nombre) 
+        : [];
+
+    // 2. Preparar el payload
+    const payload = {
+        // IMPORTANTE: Aquí necesitamos el ID de la amenidad.
+        // Si lo guardaste en la reserva, usa: reservacion.amenidad_id
+        // Si NO lo guardaste y solo es la Terraza, pon el ID fijo de la Terraza aquí.
+        amenidadId: reservacion.amenidad_id || '2', 
+        
+        extrasSeleccionados: extrasNombres,
+
+        reservacionId: reservacion._id // Enviamos el ID de Mongo
+    };
+
+    // 3. Llamar al servicio (El mismo que usas en Create)
+    this.reservacionService.iniciarPagoStripe(payload).subscribe({
+        next: (res) => {
+            if (res.data && res.data.url) {
+                // Redirigir a Stripe
+                window.location.href = res.data.url;
+            }
+        },
+        error: (err) => {
+            console.error('Error al iniciar pago:', err);
+            alert('No se pudo conectar con la pasarela de pagos.');
+        }
+    });
+  }
+
   // Navega a la edición
   goToEdit(id: string): void {
     this.router.navigate(['/main/reservaciones/edit', id]);

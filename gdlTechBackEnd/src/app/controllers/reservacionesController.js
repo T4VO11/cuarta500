@@ -3,6 +3,9 @@ const Usuario = require('../../models/Usuario');
 const JsonResponse = require('../../utils/JsonResponse');
 const Encryption = require('../../utils/encryption');
 const mongoose = require('mongoose');
+const Amenidad = require('../../models/Amenidad'); // Necesario para sacar los precios
+const Stripe = require('stripe');
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
 exports.index = async (req, res) => {
     try {
@@ -427,6 +430,146 @@ exports.misReservaciones = async (req, res) => {
     } catch (error) {
         console.error('Error en misReservaciones:', error);
         return JsonResponse.error(res, 'Error al obtener reservaciones', 500);
+    }  
+};
+
+exports.crearSesionPago = async (req, res) => {
+    try {
+        // 1. Recibimos el ID de la amenidad y los nombres de los extras
+        const { amenidadId, extrasSeleccionados, reservacionId } = req.body;
+
+        if (!amenidadId) {
+            return JsonResponse.error(res, 'Falta el ID de la amenidad', 400);
+        }
+
+        // 2. BUSCAMOS LA AMENIDAD EN LA BD (Fuente de verdad de precios)
+        const amenidad = await Amenidad.findOne({ amenidad_id: amenidadId });
+        // O si usas _id de mongo: const amenidad = await Amenidad.findById(amenidadId);
+
+        if (!amenidad) {
+            return JsonResponse.error(res, 'Amenidad no encontrada', 404);
+        }
+
+        // 3. CONSTRUIMOS LOS ITEMS PARA STRIPE (Calculado en Backend por seguridad)
+        const lineItems = [];
+
+        // A) Costo Base (Extraído de reglas_apartado)
+        // Usamos nullish coalescing (??) para asegurar que sea 0 si no existe
+        const costoBase = amenidad.reglas_apartado?.costo_apartado ?? 0;
+        
+        if (costoBase > 0) {
+            lineItems.push({
+                price_data: {
+                    currency: 'mxn',
+                    product_data: {
+                        name: `Reserva: ${amenidad.nombre}`,
+                        description: 'Costo base por uso de amenidad',
+                    },
+                    unit_amount: Math.round(costoBase * 100), // Stripe usa centavos
+                },
+                quantity: 1,
+            });
+        }
+
+        // B) Servicios Extra
+        const extrasDisponibles = amenidad.reglas_apartado?.extras_disponibles || [];
+        
+        // Si el usuario mandó extras, buscamos sus precios reales en la BD
+        if (extrasSeleccionados && extrasSeleccionados.length > 0) {
+            extrasDisponibles.forEach(extraBD => {
+                // Comparamos por nombre (asegúrate que coincidan exactamente con el frontend)
+                if (extrasSeleccionados.includes(extraBD.nombre)) {
+                    lineItems.push({
+                        price_data: {
+                            currency: 'mxn',
+                            product_data: {
+                                name: `Extra: ${extraBD.nombre}`,
+                                description: extraBD.descripcion || 'Servicio adicional',
+                            },
+                            unit_amount: Math.round(extraBD.costo * 100), // Precio real de la BD
+                        },
+                        quantity: 1,
+                    });
+                }
+            });
+        }
+
+        // Validación: Stripe no permite cobrar $0
+        if (lineItems.length === 0) {
+             return JsonResponse.error(res, 'El monto total es $0, no se requiere pasarela de pago.', 400);
+        }
+
+        // 4. CREAMOS LA SESIÓN DE CHECKOUT
+        // Nota: Ajusta las URLs de success y cancel según tus rutas de Angular
+        // 4. AL CREAR LA SESIÓN, GUARDAMOS EL ID EN METADATA
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: lineItems,
+            mode: 'payment',
+            success_url: 'http://localhost:4200/main/reservaciones/exito?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url: 'http://localhost:4200/main/reservaciones/cancelado',
+            metadata: {
+                amenidadId: amenidadId,
+                // --- AQUÍ GUARDAMOS EL ID PARA RECUPERARLO DESPUÉS ---
+                reservacionId: reservacionId || null, 
+                // -----------------------------------------------------
+                usuarioId: req.usuario?.usuario_id || 'invitado',
+                extras: JSON.stringify(extrasSeleccionados)
+            }
+        });
+
+        // 5. DEVOLVEMOS LA URL PARA QUE ANGULAR REDIRIJA
+        return JsonResponse.success(res, { url: session.url }, 'Sesión de pago creada');
+
+    } catch (error) {
+        console.error('Error al crear sesión de pago Stripe:', error);
+        return JsonResponse.error(res, 'Error al conectar con Stripe', 500);
+    }
+};
+
+// ==========================================
+// VERIFICAR Y ACTUALIZAR RESERVACIÓN
+// ==========================================
+exports.confirmarPago = async (req, res) => {
+    try {
+        const { session_id } = req.body;
+
+        if (!session_id) {
+            return JsonResponse.error(res, 'Falta el session_id', 400);
+        }
+
+        // 1. PREGUNTAR A STRIPE EL ESTADO REAL
+        const session = await stripe.checkout.sessions.retrieve(session_id);
+
+        if (session.payment_status === 'paid') {
+            // 2. RECUPERAR EL ID DE LA RESERVACIÓN DE LOS METADATOS
+            const reservacionId = session.metadata.reservacionId;
+
+            if (reservacionId) {
+                // 3. ACTUALIZAR LA BASE DE DATOS
+                const reservacionActualizada = await Reservacion.findByIdAndUpdate(
+                    reservacionId,
+                    { 
+                        estado_pago: 'pagado',
+                        estado: 'confirmada', // Opcional: Confirmamos la reserva también
+                        // Guardamos el ID de transacción de Stripe para referencia
+                        'transaccion_detalle.transaccion_id': session.payment_intent 
+                    },
+                    { new: true }
+                );
+
+                return JsonResponse.success(res, reservacionActualizada, 'Pago confirmado y reservación actualizada');
+            } else {
+                // Caso: Pago de una reservación nueva que no existía en BD (lógica futura)
+                return JsonResponse.success(res, null, 'Pago exitoso (sin reservación previa vinculada)');
+            }
+        } else {
+            return JsonResponse.error(res, 'El pago no se ha completado', 400);
+        }
+
+    } catch (error) {
+        console.error('Error al confirmar pago:', error);
+        return JsonResponse.error(res, 'Error al verificar la sesión con Stripe', 500);
     }
 };
 

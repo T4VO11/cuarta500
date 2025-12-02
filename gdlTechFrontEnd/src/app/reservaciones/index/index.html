@@ -31,6 +31,13 @@
         
         <!-- Acciones -->
             <td>
+
+            <button *ngIf="reservacion.estado_pago === 'pendiente'"
+              class="btn btn-sm btn-success me-2" 
+              (click)="pagarReservacion(reservacion)"
+              title="Pagar con tarjeta">
+              <i class="bi bi-credit-card-2-front"></i> Pagar
+            </button>
              <!-- Detalle (Show) -->
             <a [routerLink]="['/main/reservaciones/show', reservacion._id]" class="btn btn-sm btn-secondary me-2">
                 <i class="bi bi-eye"></i> Detalle

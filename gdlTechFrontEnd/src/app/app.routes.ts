@@ -62,6 +62,10 @@ import { UsuariosCreateComponent } from './usuarios/create/create';
 import { UsuariosEditComponent } from './usuarios/edit/edit';
 import { ShowUsuarioComponent } from './usuarios/show/show';
 
+//Rutas para los pagos
+import { ExitoComponent } from './reservaciones/exito/exito';
+import { CanceladoComponent } from './reservaciones/cancelado/cancelado';
+
 
 export const routes: Routes = [
   
@@ -222,6 +226,9 @@ export const routes: Routes = [
          canActivate: [roleGuard],
          data: { roles: ['administrador', 'dueño'] },
          children: [
+             { path: 'exito', component: ExitoComponent },
+             { path: 'cancelado', component: CanceladoComponent },
+
              { path: '', component: ReservacionesIndexComponent }, 
              { path: 'create', component: CreateComponent }, // Ojo con la importación de CreateComponent aquí
              { path: 'edit/:id', component: ReservacionesEditComponent }, 

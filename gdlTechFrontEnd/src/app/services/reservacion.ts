@@ -37,4 +37,9 @@ export class ReservacionService {
     // DELETE /reservaciones/:id
     return this.http.delete<any>(`${this.apiUrl}/${id}`);
   }
+
+  iniciarPagoStripe(data: any): Observable<any> {
+    // Ajusta la ruta si tu backend tiene prefijo /api/v1...
+    return this.http.post(`${this.apiUrl}/crear-pago`, data);
+}
 }
