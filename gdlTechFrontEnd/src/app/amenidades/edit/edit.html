@@ -91,6 +91,65 @@
         <input type="time" class="form-control" [(ngModel)]="amenidadAEditar.reglas_apartado.horario_fin" name="horario_fin" required>
     </div>
 </div>
+
+
+    <h4 class="mt-4 mb-3 border-top pt-3 text-warning-emphasis">
+        <i class="bi bi-pencil-square"></i> Editar Servicios Extra
+    </h4>
+    
+    <div class="card bg-light border-0 mb-4">
+        <div class="card-body">
+            <p class="text-muted small mb-3">
+                Modifica los costos o agrega nuevos servicios para esta amenidad.
+            </p>
+
+            <div class="table-responsive" 
+                 *ngIf="amenidadAEditar.reglas_apartado?.extras_disponibles && amenidadAEditar.reglas_apartado.extras_disponibles.length > 0">
+                <table class="table table-bordered table-hover bg-white">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th style="width: 40%">Nombre</th>
+                            <th style="width: 25%">Costo ($)</th>
+                            <th style="width: 25%">Descripción</th>
+                            <th style="width: 10%" class="text-center">Borrar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let extra of amenidadAEditar.reglas_apartado.extras_disponibles; let i = index">
+                            <td>
+                                <input type="text" class="form-control form-control-sm" 
+                                       name="editExtraNombre_{{i}}" 
+                                       [(ngModel)]="extra.nombre" required>
+                            </td>
+                            <td>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" 
+                                           name="editExtraCosto_{{i}}" 
+                                           [(ngModel)]="extra.costo" required>
+                                </div>
+                            </td>
+                            <td>
+                                <input type="text" class="form-control form-control-sm" 
+                                       name="editExtraDesc_{{i}}" 
+                                       [(ngModel)]="extra.descripcion">
+                            </td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-outline-danger btn-sm" 
+                                        (click)="eliminarServicioExtra(i)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <button type="button" class="btn btn-outline-primary mt-2" (click)="agregarServicioExtra()">
+                <i class="bi bi-plus-circle"></i> Agregar Nuevo Servicio
+            </button>
+        </div>
+    </div>
             
             <h4 class="mt-4">Galería de Imágenes Actual ({{ amenidadAEditar.reglas_apartado?.galeria_urls?.length || 0 }})</h4>
             <div class="row mb-4">

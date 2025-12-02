@@ -42,12 +42,43 @@ export class AmenidadesEditComponent implements OnInit {
 
   //  LÓGICA DE CARGA 
 
+  // loadAmenidadDetalle(id: string): void {
+  //     // Usamos showAmenidad(id) de tu servicio (asumiendo que ya lo creaste)
+  //     this.amenidadService.showAmenidad(id).subscribe({
+  //         next: (response) => {
+  //             if (response && response.estado === 'exito' && response.data) {
+  //                 this.amenidadAEditar = response.data; // Carga los datos al objeto
+  //                 this.isLoading = false;
+  //             } else {
+  //                 this.errorMessage = response.mensaje || 'Amenidad no encontrada.';
+  //                 this.isLoading = false;
+  //             }
+  //         },
+  //         error: (err) => {
+  //             this.errorMessage = 'Error de conexión o al cargar datos.';
+  //             this.isLoading = false;
+  //             console.error('Error al cargar amenidad:', err);
+  //         }
+  //     });
+  // }
+
   loadAmenidadDetalle(id: string): void {
-      // Usamos showAmenidad(id) de tu servicio (asumiendo que ya lo creaste)
       this.amenidadService.showAmenidad(id).subscribe({
           next: (response) => {
               if (response && response.estado === 'exito' && response.data) {
-                  this.amenidadAEditar = response.data; // Carga los datos al objeto
+                  this.amenidadAEditar = response.data;
+                  
+                  // --- INICIO CÓDIGO NUEVO DE SEGURIDAD ---
+                  // Asegurar que existan los objetos anidados para evitar errores en el HTML
+                  if (!this.amenidadAEditar.reglas_apartado) {
+                      this.amenidadAEditar.reglas_apartado = {};
+                  }
+                  // Si no existe el array de extras, créalo vacío
+                  if (!this.amenidadAEditar.reglas_apartado.extras_disponibles) {
+                      this.amenidadAEditar.reglas_apartado.extras_disponibles = [];
+                  }
+                  // --- FIN CÓDIGO NUEVO ---
+
                   this.isLoading = false;
               } else {
                   this.errorMessage = response.mensaje || 'Amenidad no encontrada.';
@@ -77,6 +108,26 @@ export class AmenidadesEditComponent implements OnInit {
           this.amenidadAEditar.reglas_apartado.galeria_urls = 
               this.amenidadAEditar.reglas_apartado.galeria_urls.filter((u: string) => u !== url);
       }
+  }
+
+  agregarServicioExtra() {
+    // Verificación paranoica: Asegurar que el array existe
+    if (!this.amenidadAEditar.reglas_apartado.extras_disponibles) {
+        this.amenidadAEditar.reglas_apartado.extras_disponibles = [];
+    }
+
+    // Agregar objeto vacío al array
+    this.amenidadAEditar.reglas_apartado.extras_disponibles.push({
+      nombre: '',
+      costo: 0,
+      descripcion: ''
+    });
+  }
+
+  eliminarServicioExtra(index: number) {
+    if (confirm('¿Borrar este servicio extra?')) {
+        this.amenidadAEditar.reglas_apartado.extras_disponibles.splice(index, 1);
+    }
   }
 
   //  FUNCIÓN DE EDICIÓN (PUT) 

@@ -135,6 +135,110 @@ console.log('Nueva Amenidad antes de guardar:', nuevaAmenidad);
     }
 };
 
+// exports.update = async (req, res) => {
+//     try {
+//         console.log('update ');
+//         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+//             return JsonResponse.error(res, 'ID inválido', 400);
+//         }
+
+//         const amenidad = await Amenidad.findById(req.params.id);
+//         if (!amenidad) {
+//             return JsonResponse.notFound(res, 'Amenidad no encontrada');
+//         }
+
+//         const {
+//             tipo,
+//             nombre,
+//             descripcion,
+//             estado,
+//             espacio_ref_id,
+//             usuario_id,
+//             motivo,
+//             catalogo_detalle,
+//             reglas_apartado,
+//             transaccion_detalle
+//         } = req.body;
+
+//         // Manejar archivos de galería si se suben
+//        if (req.files && req.files.length > 0) { // Comprobar si hay archivos subidos
+    
+//     // Asumimos que todos los archivos en req.files son de la galería
+//     const nuevasUrls = req.files.map(
+//     file => `uploads/amenidades/${file.filename}`
+//         );
+//     // Verificamos si reglas_apartado existe y concatenamos
+//     if (amenidad.reglas_apartado) {
+//         // Concatenar las URLs viejas con las nuevas (las viejas están en amenidad.reglas_apartado.galeria_urls)
+//         amenidad.reglas_apartado.galeria_urls = [
+//             ...(amenidad.reglas_apartado.galeria_urls || []),
+//             ...nuevasUrls
+//         ];
+//     } else {
+//         // Si reglas_apartado no existe, lo inicializamos con la galería
+//         amenidad.reglas_apartado = { galeria_urls: nuevasUrls };
+//     }
+// }
+
+//         if (tipo) amenidad.tipo = tipo;
+//         if (nombre) amenidad.nombre = nombre;
+//         if (descripcion !== undefined) amenidad.descripcion = descripcion;
+//         if (estado) amenidad.estado = estado;
+//         if (motivo !== undefined) amenidad.motivo = motivo;
+//         if (espacio_ref_id !== undefined && espacio_ref_id !== null) { 
+//             amenidad.espacio_ref_id = espacio_ref_id;
+//             }
+//         if (usuario_id !== undefined && usuario_id !== null) {
+//             amenidad.usuario_id = usuario_id;
+//             }
+//         if (catalogo_detalle) {
+//             try {
+//                 amenidad.catalogo_detalle = { ...amenidad.catalogo_detalle, ...JSON.parse(catalogo_detalle) };
+//             } catch {
+//                 amenidad.catalogo_detalle = { ...amenidad.catalogo_detalle, ...catalogo_detalle };
+//             }
+//         }
+//         if (reglas_apartado) {
+//             try {
+//                 const reglasData = typeof reglas_apartado === 'string' ? JSON.parse(reglas_apartado) : reglas_apartado;
+//                 Object.assign(amenidad.reglas_apartado, reglasData);
+//             } catch {
+//                 amenidad.reglas_apartado = { ...amenidad.reglas_apartado, ...reglas_apartado };
+//             }
+//         }
+//         if (transaccion_detalle) {
+//             try {
+//                 const transaccionData = typeof transaccion_detalle === 'string' ? JSON.parse(transaccion_detalle) : transaccion_detalle;
+//                 amenidad.transaccion_detalle = { ...amenidad.transaccion_detalle, ...transaccionData };
+//             } catch {
+//                 amenidad.transaccion_detalle = { ...amenidad.transaccion_detalle, ...transaccion_detalle };
+//             }
+//         }
+// console.log('Amenidad antes de guardar:', amenidad);
+//         await amenidad.save();
+
+//         const amenidadObj = amenidad.toObject();
+//         if (amenidadObj.reglas_apartado?.galeria_urls) {
+//             amenidadObj.reglas_apartado.galeria_urls = buildImageUrls(req, amenidadObj.reglas_apartado.galeria_urls);
+//         }
+
+//         // if (req.query.encrypt === 'true') {
+//         //     const responseData = {
+//         //         estado: 'exito',
+//         //         mensaje: 'Amenidad actualizada exitosamente',
+//         //         data: amenidadObj
+//         //     };
+//         //     const encryptedResponse = Encryption.encryptResponse(responseData);
+//         //     return res.json(encryptedResponse);
+//         // }
+
+//         return JsonResponse.success(res, amenidadObj, 'Amenidad actualizada exitosamente');
+//     } catch (error) {
+//         console.error('Error en update amenidad:', error);
+//         return JsonResponse.error(res, 'Error al actualizar amenidad', 500);
+//     }
+// };
+
 exports.update = async (req, res) => {
     try {
         console.log('update ');
@@ -148,89 +252,91 @@ exports.update = async (req, res) => {
         }
 
         const {
-            tipo,
-            nombre,
-            descripcion,
-            estado,
-            espacio_ref_id,
-            usuario_id,
-            motivo,
-            catalogo_detalle,
-            reglas_apartado,
+            tipo, nombre, descripcion, estado, espacio_ref_id,
+            usuario_id, motivo, catalogo_detalle, reglas_apartado,
             transaccion_detalle
         } = req.body;
 
-        // Manejar archivos de galería si se suben
-       if (req.files && req.files.length > 0) { // Comprobar si hay archivos subidos
-    
-    // Asumimos que todos los archivos en req.files son de la galería
-    const nuevasUrls = req.files.map(
-    file => `uploads/amenidades/${file.filename}`
-        );
-    // Verificamos si reglas_apartado existe y concatenamos
-    if (amenidad.reglas_apartado) {
-        // Concatenar las URLs viejas con las nuevas (las viejas están en amenidad.reglas_apartado.galeria_urls)
-        amenidad.reglas_apartado.galeria_urls = [
-            ...(amenidad.reglas_apartado.galeria_urls || []),
-            ...nuevasUrls
-        ];
-    } else {
-        // Si reglas_apartado no existe, lo inicializamos con la galería
-        amenidad.reglas_apartado = { galeria_urls: nuevasUrls };
-    }
-}
-
+        // ---------------------------------------------------------
+        // PASO 1: ACTUALIZAR DATOS DE TEXTO/JSON (PRIMERO)
+        // ---------------------------------------------------------
+        
         if (tipo) amenidad.tipo = tipo;
         if (nombre) amenidad.nombre = nombre;
         if (descripcion !== undefined) amenidad.descripcion = descripcion;
         if (estado) amenidad.estado = estado;
         if (motivo !== undefined) amenidad.motivo = motivo;
-        if (espacio_ref_id !== undefined && espacio_ref_id !== null) { 
-            amenidad.espacio_ref_id = espacio_ref_id;
-            }
-        if (usuario_id !== undefined && usuario_id !== null) {
-            amenidad.usuario_id = usuario_id;
-            }
+        if (espacio_ref_id !== undefined && espacio_ref_id !== null) amenidad.espacio_ref_id = espacio_ref_id;
+        if (usuario_id !== undefined && usuario_id !== null) amenidad.usuario_id = usuario_id;
+
+        // Procesar JSON strings de FormData
         if (catalogo_detalle) {
             try {
-                amenidad.catalogo_detalle = { ...amenidad.catalogo_detalle, ...JSON.parse(catalogo_detalle) };
-            } catch {
-                amenidad.catalogo_detalle = { ...amenidad.catalogo_detalle, ...catalogo_detalle };
-            }
+                const detData = typeof catalogo_detalle === 'string' ? JSON.parse(catalogo_detalle) : catalogo_detalle;
+                amenidad.catalogo_detalle = { ...amenidad.catalogo_detalle, ...detData };
+            } catch (e) { console.error('Error parseando catalogo', e); }
         }
+
+        if (transaccion_detalle) {
+            try {
+                const transData = typeof transaccion_detalle === 'string' ? JSON.parse(transaccion_detalle) : transaccion_detalle;
+                amenidad.transaccion_detalle = { ...amenidad.transaccion_detalle, ...transData };
+            } catch (e) { console.error('Error parseando transaccion', e); }
+        }
+
         if (reglas_apartado) {
             try {
                 const reglasData = typeof reglas_apartado === 'string' ? JSON.parse(reglas_apartado) : reglas_apartado;
-                Object.assign(amenidad.reglas_apartado, reglasData);
-            } catch {
-                amenidad.reglas_apartado = { ...amenidad.reglas_apartado, ...reglas_apartado };
+                
+                // IMPORTANTE: Mongoose detecta mejor los cambios si asignas propiedades específicas
+                // o usas un merge cuidadoso.
+                
+                // Si reglasData trae extras_disponibles, los actualizamos
+                if (reglasData.extras_disponibles) {
+                    // Inicializamos si no existe
+                    if (!amenidad.reglas_apartado) amenidad.reglas_apartado = {};
+                    amenidad.reglas_apartado.extras_disponibles = reglasData.extras_disponibles;
+                }
+                
+                // Actualizamos otros campos simples de reglas_apartado sin borrar la galeria
+                // Hacemos un loop para no borrar 'galeria_urls' si no viene en el JSON
+                for (const key in reglasData) {
+                    if (key !== 'galeria_urls') { // Protegemos la galería del JSON entrante
+                        if (!amenidad.reglas_apartado) amenidad.reglas_apartado = {};
+                        amenidad.reglas_apartado[key] = reglasData[key];
+                    }
+                }
+            } catch (e) { 
+                console.error('Error parseando reglas_apartado', e);
             }
         }
-        if (transaccion_detalle) {
-            try {
-                const transaccionData = typeof transaccion_detalle === 'string' ? JSON.parse(transaccion_detalle) : transaccion_detalle;
-                amenidad.transaccion_detalle = { ...amenidad.transaccion_detalle, ...transaccionData };
-            } catch {
-                amenidad.transaccion_detalle = { ...amenidad.transaccion_detalle, ...transaccion_detalle };
+
+        // ---------------------------------------------------------
+        // PASO 2: AGREGAR IMÁGENES NUEVAS (AL FINAL)
+        // ---------------------------------------------------------
+        if (req.files && req.files.length > 0) { 
+            const nuevasUrls = req.files.map(file => `uploads/amenidades/${file.filename}`);
+            
+            if (amenidad.reglas_apartado) {
+                // Agregar al array existente
+                amenidad.reglas_apartado.galeria_urls = [
+                    ...(amenidad.reglas_apartado.galeria_urls || []),
+                    ...nuevasUrls
+                ];
+            } else {
+                // Crear si no existe
+                amenidad.reglas_apartado = { galeria_urls: nuevasUrls };
             }
         }
-console.log('Amenidad antes de guardar:', amenidad);
+
+        console.log('Amenidad antes de guardar (Update):', amenidad);
         await amenidad.save();
 
+        // Construir URLs completas para la respuesta
         const amenidadObj = amenidad.toObject();
         if (amenidadObj.reglas_apartado?.galeria_urls) {
             amenidadObj.reglas_apartado.galeria_urls = buildImageUrls(req, amenidadObj.reglas_apartado.galeria_urls);
         }
-
-        // if (req.query.encrypt === 'true') {
-        //     const responseData = {
-        //         estado: 'exito',
-        //         mensaje: 'Amenidad actualizada exitosamente',
-        //         data: amenidadObj
-        //     };
-        //     const encryptedResponse = Encryption.encryptResponse(responseData);
-        //     return res.json(encryptedResponse);
-        // }
 
         return JsonResponse.success(res, amenidadObj, 'Amenidad actualizada exitosamente');
     } catch (error) {

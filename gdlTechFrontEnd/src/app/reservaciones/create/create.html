@@ -23,7 +23,10 @@
                     </div>
                     <div class="col-md-7">
                         <!-- <h4 class="text-primary">Datos del Evento</h4> -->
-                        <p class="fs-5"><strong>Costo Base Fijo:</strong> <span class="text-danger">$1,000.00 MXN</span></p>
+                        <p class="fs-5">
+                            <strong>Costo Base Fijo:</strong> 
+                            <span class="text-danger">{{ COSTO_BASE | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+                        </p>
                         <!-- <p><strong>Estado de la Amenidad:</strong> {{ amenidad.estado | titlecase }}</p> -->
                     </div>
                 </div>
@@ -104,7 +107,10 @@
 
         <h4 class="mt-4 border-bottom pb-2">Desglose de Costos</h4>
         <ul class="list-group">
-            <li class="list-group-item d-flex justify-content-between">Costo Base Fijo: <span>$1,000.00 MXN</span></li>
+            <li class="list-group-item d-flex justify-content-between">
+                Costo Base Amenidad: 
+                <span>{{ COSTO_BASE | currency:'MXN':'symbol-narrow':'1.2-2' }}</span>
+            </li>
             <li class="list-group-item d-flex justify-content-between bg-warning-light" *ngFor="let servicio of ticketData.servicios_extra">
                 Servicio Extra ({{ servicio.nombre }}): <span>+ ${{ servicio.costo | number:'1.2-2' }} MXN</span>
             </li>

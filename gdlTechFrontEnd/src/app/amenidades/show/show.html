@@ -66,6 +66,35 @@
                             <strong>Días Permitidos:</strong> {{ amenidad.reglas_apartado.dias_permitidos?.join(', ') || 'Todos los días' }}
                         </li>
                     </ul>
+
+                    <div class="card shadow-sm mb-4 border-warning" 
+     *ngIf="amenidad.reglas_apartado?.extras_disponibles && amenidad.reglas_apartado.extras_disponibles.length > 0">
+    <div class="card-header bg-warning-subtle text-dark fw-bold">
+        <i class="bi bi-cart-plus me-2"></i> Servicios Extra Disponibles
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover mb-0">
+                <thead class="table-light small text-muted">
+                    <tr>
+                        <th>Servicio</th>
+                        <th>Costo Adicional</th>
+                        <th>Detalles</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let extra of amenidad.reglas_apartado.extras_disponibles">
+                        <td class="fw-bold">{{ extra.nombre }}</td>
+                        <td class="text-success fw-bold">{{ extra.costo | currency:'MXN':'symbol':'1.2-2' }}</td>
+                        <td class="small text-muted">
+                            {{ extra.descripcion || 'Sin descripción' }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
                     
                     <h4 class="mt-4 mb-3 text-success">Galería de Imágenes</h4>
                     

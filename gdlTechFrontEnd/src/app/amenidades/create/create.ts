@@ -39,7 +39,8 @@ localPreviews: { url: string | ArrayBuffer | null, file: File }[] = [];
         motivo: ''
     },
     reglas_apartado: {
-        costo_apartado: 0, 
+        costo_apartado: 0,
+        extras_disponibles: [],
         dias_permitidos: [], 
         horario_maximo_horas: 0, 
         capacidad_maxima: 1,
@@ -82,6 +83,29 @@ localPreviews: { url: string | ArrayBuffer | null, file: File }[] = [];
       
 //       return this.buildImageUrl( imagePaths);
 //   }
+
+
+agregarServicioExtra() {
+    // Nos aseguramos que el objeto y el array existan antes de hacer push
+    if (!this.nuevaAmenidad.reglas_apartado) {
+      this.nuevaAmenidad.reglas_apartado = { extras_disponibles: [] };
+    }
+    if (!this.nuevaAmenidad.reglas_apartado.extras_disponibles) {
+      this.nuevaAmenidad.reglas_apartado.extras_disponibles = [];
+    }
+
+    // Agregamos un objeto vacío para que aparezcan los inputs en el HTML
+    this.nuevaAmenidad.reglas_apartado.extras_disponibles.push({
+      nombre: '',
+      costo: 0,
+      descripcion: '' // Opcional
+    });
+  }
+
+  // Función para ELIMINAR una fila de la lista visual
+  eliminarServicioExtra(index: number) {
+    this.nuevaAmenidad.reglas_apartado.extras_disponibles.splice(index, 1);
+  }
 
   onFileSelected(event: any): void {
     this.selectedFiles = Array.from(event.target.files); 

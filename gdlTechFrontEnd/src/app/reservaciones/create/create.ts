@@ -25,14 +25,10 @@ export class CreateComponent implements OnInit {
   ticketData: any = null; // Datos para mostrar el ticket de éxito
   
   // Opciones de servicios extra y su costo base fijo
-  opcionesExtra = [
-    { nombre: '3 mesas y 15 sillas extra', costo: 150 },
-    { nombre: 'Bocina y micrófono', costo: 100 },
-    { nombre: 'Asador grande', costo: 50 }
-  ];
+  opcionesExtra: any[] = [];
   
   // Costo base inicial de la reservación (fijo en 1000 MXN)
-  COSTO_BASE = 1000;
+  COSTO_BASE = 0;
 
   // Objeto para el formulario de reservación (el que se envía a MongoDB)
   nuevaReservacion: any = {
@@ -68,12 +64,29 @@ export class CreateComponent implements OnInit {
 
   // Carga los datos de la amenidad específica
   loadAmenidad(id: string): void {
-    this.amenidadService.getAmenidades().subscribe({
+    this.amenidadService.showAmenidad(id).subscribe({
       next: (response) => {
         if (response && response.estado === 'exito') {
           this.amenidad = response.data;
-          // Reinicia el total al costo base al cargar la amenidad
-          this.nuevaReservacion.total = this.COSTO_BASE; 
+
+          console.log('Amenidad cargada:', this.amenidad);
+          console.log('Reglas:', this.amenidad.reglas_apartado);
+          console.log('Extras:', this.amenidad.reglas_apartado?.extras_disponibles);
+          //CAMBIO: Mapeo de datos del Backend al Frontend ---
+          
+          // Asignar el costo base desde la BD
+          // Usamos el operador ?. para evitar errores si viene nulo
+          this.COSTO_BASE = this.amenidad.reglas_apartado?.costo_apartado || 0;
+          
+          // Asignar los extras disponibles desde la BD
+          const extrasData = this.amenidad.reglas_apartado?.extras_disponibles || [];
+          this.opcionesExtra = extrasData.map((extra: any) => ({
+          ...extra,
+          selected: false
+  }));
+
+          // Reinicia el total usando el nuevo costo base real
+          this.nuevaReservacion.total = this.COSTO_BASE;
         }
       },
       error: (err) => {
