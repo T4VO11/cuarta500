@@ -41,9 +41,10 @@
                     <!-- Muestra la imagen INE/Foto si existe -->
                     <div *ngIf="getImagenUrl(bitacora)">
                         <h5 class="small text-muted">Foto de Acceso / INE</h5>
-                        <img [src]="getImagenUrl(bitacora)" 
-                             alt="Evidencia" 
-                             class="img-fluid rounded shadow-sm" style="max-height: 400px;">
+                       <img *ngIf="bitacora.detalle_acceso?.imagen_ine_url" 
+     [src]="getImagenUrl(bitacora.detalle_acceso.imagen_ine_url)" 
+     alt="INE" class="img-fluid">
+
                     </div>
                     <div *ngIf="!getImagenUrl(bitacora)">
                         <p class="text-muted">No se adjuntó evidencia visual.</p>

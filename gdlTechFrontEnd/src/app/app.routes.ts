@@ -14,8 +14,8 @@ import { AmenidadesEditComponent } from './amenidades/edit/edit';
 import { AmenidadesShowComponent } from './amenidades/show/show';
 
 //  Componentes de bitacoras 
-import { IndexComponent as BitacorasIndexComponent } from './bitacoras/index/index';
-import { CreateComponent as BitacorasCreateComponent } from './bitacoras/create/create';
+import { BitacorasIndexComponent } from './bitacoras/index/index';
+import { BitacorasCreateComponent } from './bitacoras/create/create';
 import { EditComponent as BitacorasEditComponent } from './bitacoras/edit/edit';
 import { BitacorasShowComponent } from './bitacoras/show/show';
 

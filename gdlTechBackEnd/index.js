@@ -32,7 +32,12 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use(decryptionRequest);
+app.use((req, res, next) => {
+    if (req.path.startsWith('/uploads')) {
+        return next();  // No aplicar middleware a imágenes
+    }
+    decryptionRequest(req, res, next);
+});
 
 // Rutas
 console.log('Cargando rutas...');

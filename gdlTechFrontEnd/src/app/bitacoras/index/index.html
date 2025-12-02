@@ -1,5 +1,10 @@
 <h2>Registro de Bitácoras (Acceso y Eventos)</h2>
 
+<button 
+    class="btn btn-primary mb-3" routerLink="/main/bitacoras/create">
+    <i class="bi bi-plus-circle"></i> Registro de visita inesperada
+</button>
+
 <div class="table-responsive shadow-sm">
   <table class="table table-striped table-hover align-middle">
     <thead>
@@ -26,13 +31,13 @@
             <span *ngIf="bitacora.detalle_acceso?.placas"> | Placas: {{ bitacora.detalle_acceso.placas }}</span>
         </td>
         <td>
-          <button *ngIf="getImagenUrl(bitacora)" 
-                  class="btn btn-sm btn-outline-info"
-                  (click)="verImagen(bitacora)" 
-                  type="button">
-            Ver Foto
-          </button>
-          <span *ngIf="!getImagenUrl(bitacora)">N/A</span>
+          <button *ngIf="bitacora.detalle_acceso?.imagen_ine_url"
+          class="btn btn-sm btn-outline-info"
+          (click)="verImagen(bitacora)"
+          type="button">
+    Ver Foto
+  </button>
+  <span *ngIf="!bitacora.detalle_acceso?.imagen_ine_url">N/A</span>
         </td>
         
         <!-- Acciones -->

@@ -22,5 +22,10 @@ export class BitacoraService {
     return this.http.get<any>(`${this.apiUrl}/${id}`);
   }
   
-  // Los métodos create, update, y delete no son necesarios para este módulo de solo lectura.
+  createBitacora(data: any): Observable<any> {
+    // POST /bitacoras
+    return this.http.post<any>(this.apiUrl, data);
+  }
+
+  // Los métodos update, y delete no son necesarios para este módulo de solo lectura y crear.
 }

@@ -88,7 +88,7 @@ exports.store = async (req, res) => {
 
         let detalleAccesoData = detalle_acceso ? (typeof detalle_acceso === 'string' ? JSON.parse(detalle_acceso) : detalle_acceso) : {};
         if (req.file) {
-            detalleAccesoData.imagen_ine_url = `bitacoras/${req.file.filename}`;
+            detalleAccesoData.imagen_ine_url = `uploads/bitacoras/${req.file.filename}`;
         }
 
         // Si el tipo es visita_no_esperada, el vehiculo puede estar en detalle_acceso
@@ -148,7 +148,7 @@ exports.update = async (req, res) => {
 
         if (req.file) {
             if (!bitacora.detalle_acceso) bitacora.detalle_acceso = {};
-            bitacora.detalle_acceso.imagen_ine_url = `bitacoras/${req.file.filename}`;
+            bitacora.detalle_acceso.imagen_ine_url = `uploads/bitacoras/${req.file.filename}`;
         }
 
         if (tipo_registro) bitacora.tipo_registro = tipo_registro;

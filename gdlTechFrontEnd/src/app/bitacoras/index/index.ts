@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router'; // Para los routerLinks de Detalle
+import { RouterModule, Router } from '@angular/router'; 
 import { BitacoraService } from '../../services/bitacora'; 
 
 @Component({
@@ -10,9 +10,10 @@ import { BitacoraService } from '../../services/bitacora';
   templateUrl: './index.html',
   styleUrl: './index.css',
 })
-export class IndexComponent implements OnInit {
+export class BitacorasIndexComponent implements OnInit {
   
   private bitacoraService = inject(BitacoraService); 
+  private router = inject(Router);
 
   bitacoras: any[] = [];
   
@@ -35,28 +36,72 @@ export class IndexComponent implements OnInit {
       },
       error: (err) => console.error('Error al obtener bitácoras:', err)
     });
+    console.log(Response);
   }
   
-  // Helper para mostrar imágenes si existe la URL
-  getImagenUrl(bitacora: any): string | null {
-    const path = bitacora.detalle_acceso?.imagen_ine_url;
-    if (!path) return null;
-    
-    // Asumimos que tu Back-End te devuelve el path relativo (ej. 'bitacoras/imagen.jpg')
-    return `http://localhost:3000/${path}`;
+ 
+// -------------------------------------------------
+// Normaliza y devuelve una URL válida para <img src>
+// Acepta: string | objeto | null/undefined
+// -------------------------------------------------
+getImagenUrl(input: any): string {
+  const BASE = 'http://localhost:3000';
+
+  // 1) No hay nada
+  if (!input) return '';
+
+  // 2) Si te pasan todo el objeto, intenta extraer el path
+  let path: any = input;
+  if (typeof input === 'object') {
+    // Extracción segura de posibles campos donde guardas la ruta
+    path = input?.detalle_acceso?.imagen_ine_url
+         || input?.imagen_ine_url
+         || input?.detalle_acceso?.imagen_ine
+         || input?.imagen;
   }
 
-  // Abre el modal de imagen si existe (similar al de Usuarios)
-  verImagen(bitacora: any): void {
-      const url = this.getImagenUrl(bitacora);
-      if (url) {
-          this.imagenModalUrl = url;
-          this.imagenModalTitulo = `INE / Foto de Acceso: ${bitacora.detalle_acceso?.nombre_visitante || 'Visitante'}`;
-      }
+  if (!path) return '';
+
+  // Asegurar que sea string
+  path = String(path);
+
+  // 3) Si ya es una URL absoluta (http/https) -> devolver tal cual
+  if (/^https?:\/\//i.test(path)) {
+    return path;
   }
+
+  // 4) Si ya viene con "uploads/..." o "bitacoras/..." -> normalizar
+  const cleaned = path.replace(/^\//, ''); // quitar slash inicial si existe
+
+  return `${BASE}/${cleaned}`;
+}
+
+// -------------------------------------------------
+// Abre modal con imagen. Acepta input tipo objeto o string.
+// -------------------------------------------------
+verImagen(input: any): void {
+  // Normalizar (getImagenUrl espera objeto o string)
+  const url = this.getImagenUrl(input);
+
+  console.log('verImagen - input:', input);
+  console.log('verImagen - url normalizada:', url);
+
+  if (!url) {
+    alert('No se encontró imagen para mostrar.');
+    return;
+  }
+
+  this.imagenModalUrl = url;
+  // Opcional: titulo
+  this.imagenModalTitulo = 'Documento';
+}
+
   
   // Cierra el modal
   cerrarModal(): void {
       this.imagenModalUrl = null;
+      
   }
+
+  
 }
