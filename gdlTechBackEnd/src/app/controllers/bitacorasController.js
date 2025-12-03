@@ -96,19 +96,40 @@ exports.store = async (req, res) => {
         }
 
         // Parse del detalle_acceso
-        let detalleAccesoData = 
-            typeof detalle_acceso === 'string'
-                ? JSON.parse(detalle_acceso) 
-                : detalle_acceso || {};
+        let detalleAccesoData = {};
+        
+        if (detalle_acceso !== undefined) {
+            try {
+                detalleAccesoData = typeof detalle_acceso === "string" ? JSON.parse(detalle_acceso) : detalle_acceso;
+            } catch {
+                detalleAccesoData = detalle_acceso;
+            }
+        }
+
         if (req.file) {
             detalleAccesoData.imagen_ine_url = `uploads/bitacoras/${req.file.filename}`;
         }
 
         // Si el tipo es visita_no_esperada, el vehiculo puede estar en detalle_acceso
         if (tipo_registro === 'visita_no_esperada' && vehiculo) {
-            detalleAccesoData.vehiculo = typeof vehiculo === 'string' ? JSON.parse(vehiculo) : vehiculo;
+            try {
+                detalleAccesoData.vehiculo = typeof vehiculo === 'string' ? JSON.parse(vehiculo) : vehiculo;                
+            } catch {
+                detalleAccesoData.vehiculo = vehiculo;
+            }
         }
 
+        // Vehiculo normal
+        let vehiculoData = {};
+
+        if (tipo_registro !== "visita_no_esperada" && vehiculo) {
+            try {
+                vehiculoData = typeof vehiculo === "string" ? JSON.parse(vehiculo) : vehiculo;
+            } catch {
+                vehiculoData = vehiculo;
+            }
+        }
+        
         // Construimos el objeto plano, en lugar de la instancia mongoose
         const payload ={
             registro_id,
@@ -119,7 +140,7 @@ exports.store = async (req, res) => {
             usuario_id,
             invitacion_id: invitacion_id || null,
             detalle_acceso: detalleAccesoData,
-            vehiculo: vehiculo && tipo_registro !== 'visita_no_esperada' ? (typeof vehiculo === 'string' ? JSON.parse(vehiculo) : vehiculo) : {}
+            vehiculo: vehiculoData
         };
 
         // Usar dualWriter para crear en local e intentar en Atlas (en caso de fallas, encola)
@@ -134,7 +155,7 @@ exports.store = async (req, res) => {
     } catch (error) {
         console.error('Error en store bitacora:', error);
         if ( error.code === 11000) {
-            return JsonResponde.error(res, "El 'registro_id' ya existe", 400);
+            return JsonResponse.error(res, "El 'registro_id' ya existe", 400);
         }
         return JsonResponse.error(res, 'Error al crear bitácora', 500);
     }
@@ -145,6 +166,7 @@ exports.update = async (req, res) => {
     try {
         console.log('update');
         const id = req.params.id;
+
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
@@ -156,58 +178,67 @@ exports.update = async (req, res) => {
         }
 
         const { 
-            tipo_registro,
-            fecha_hora,
-            accion,
-            usuario_id,
-            invitacion_id,
-            detalle_acceso,
-            vehiculo
-         } = req.body;
+            tipo_registro, fecha_hora, accion, usuario_id,
+            invitacion_id, detalle_acceso, vehiculo
+        } = req.body;
 
-         //Preparamos los datos para actualizar
-         let detalleAcceso = bitacora.detalle_acceso || {};
+        // ====== DETALLE ACCESO ======
+        let detalleAcceso = bitacora.detalle_acceso ? bitacora.detalle_acceso.toObject() : {};
 
         // Imagen
         if (req.file) {
-            if (!bitacora.detalle_acceso) bitacora.detalle_acceso = {};
-            bitacora.detalle_acceso.imagen_ine_url = `uploads/bitacoras/${req.file.filename}`;
+            detalleAcceso.imagen_ine_url = `uploads/bitacoras/${req.file.filename}`;            
         }
 
         if (detalle_acceso !== undefined) {
             try {
-                const parsed = typeof detalle_acceso === "string" ? JSON.parse(detalle_acceso) : detalle_acceso;
-                    detalleAcceso = {...detalleAcceso, ...parsed };
-            }catch {detalleAcceso = { ...detalleAcceso, ...detalle_acceso };
+                const parsed = typeof detalle_acceso === "string" 
+                    ? JSON.parse(detalle_acceso) 
+                    : detalle_acceso;
+
+                detalleAcceso = { ...detalleAcceso, ...parsed };
+            } catch {
+                detalleAcceso = { ...detalleAcceso, ...detalle_acceso };
+            }
         }
-    }
 
-
-        // Manejo de Vehículo según tipo_registro
-        let vehiculoData = bitacora.vehiculo || {};
+        // ====== VEHICULO ======
+        let vehiculoData = bitacora.vehiculo ? bitacora.vehiculo.toObject() : {};
 
         if (vehiculo !== undefined) {
             try {
-                const parsedV = typeof vehiculo === "string" ? JSON.parse(vehiculo) : vehiculo;
-                // Si es visita NO esperada -> vehiculo se guarda dentro de detalle_acceso
+                const parsedV = typeof vehiculo === "string" 
+                    ? JSON.parse(vehiculo) 
+                    : vehiculo;
+
                 if (tipo_registro === "visita_no_esperada") {
                     detalleAcceso.vehiculo = {
                         ...(detalleAcceso.vehiculo || {}),
                         ...parsedV
                     };
+                    vehiculoData = {};
+                } else {
+                    vehiculoData = { ...vehiculoData, ...parsedV };
                 }
             } catch {
-                // Fallback
-                vehiculoData = {
-                    ...vehiculoData,
-                    ...vehiculo
-                };
+                if (tipo_registro === "visita_no_esperada") {
+                    detalleAcceso.vehiculo = {
+                        ...(detalleAcceso.vehiculo || {}),
+                        ...vehiculo
+                    };
+                    vehiculoData = {};
+                } else {
+                    vehiculoData = {
+                        ...vehiculoData,
+                        ...vehiculo
+                    };
+                }
             }
         }
-        
-        // Creamos objeto plano updates
-        const updates = {};
 
+        // ====== CONSTRUIR UPDATES ======
+        const updates = {};
+        updates.condominio_id = 'C500';
         if (tipo_registro !== undefined) updates.tipo_registro = tipo_registro;
         if (fecha_hora !== undefined) updates.fecha_hora = fecha_hora;
         if (accion !== undefined) updates.accion = accion;
@@ -217,20 +248,26 @@ exports.update = async (req, res) => {
         updates.detalle_acceso = detalleAcceso;
         updates.vehiculo = vehiculoData;
 
-        //dualWrite
+        // dualWrite
         const updated = await bitacoraDW.update(id, updates);
 
         const bitacoraObj = updated.toObject();
+
         if (bitacoraObj.detalle_acceso?.imagen_ine_url) {
-            bitacoraObk.detalle_acceso.imagen_ine_url = buildImageUrl(req, bitacoraObj.detalle_acceso.imagen_ine_url);
+            bitacoraObj.detalle_acceso.imagen_ine_url = buildImageUrl(
+                req,
+                bitacoraObj.detalle_acceso.imagen_ine_url
+            );
         }
 
-        return JsonResponse.success(res, bitacoraObj, 'Bitacora Actualizada exitosamente');
+        return JsonResponse.success(res, bitacoraObj, 'Bitácora actualizada exitosamente');
+
     } catch (error) {
-        console.error('Error en update bitacor: ', error);
+        console.error('Error en update bitacora: ', error);
         return JsonResponse.error(res, 'Error al actualizar bitácora', 500);
     }
 };
+
 
 // DELETE (DualWriter)
 

@@ -244,18 +244,19 @@ exports.update = async (req, res) => {
                 $or: [
                     ...(username ? [{ username }] : []),
                     ...(email ? [{ email }] : [])
-                ]
+                ],
+                _id: { $ne: usuario._id } //Se usa el _id real
             };
             
-            // Excluir el usuario actual (por _id o usuario_id)
-            if (mongoose.Types.ObjectId.isValid(req.params.id)) {
-                query._id = { $ne: req.params.id };
-            } else {
-                const usuarioIdNum = parseInt(req.params.id);
-                if (!isNaN(usuarioIdNum)) {
-                    query.usuario_id = { $ne: usuarioIdNum };
-                }
-            }
+            // // Excluir el usuario actual (por _id o usuario_id)
+            // if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+            //     query._id = { $ne: req.params.id };
+            // } else {
+            //     const usuarioIdNum = parseInt(req.params.id);
+            //     if (!isNaN(usuarioIdNum)) {
+            //         query.usuario_id = { $ne: usuarioIdNum };
+            //     }
+            // }
             
             const usuarioExistente = await LocalUsuario.findOne(query);
 
@@ -285,14 +286,14 @@ exports.update = async (req, res) => {
         //Armamos el objeto plano 'data' para DualWrite
         const data = {}; 
         // Actualizar campos
-        if (username) data.username = username;
-        if (password) data.password = password; // Se hasheará automáticamente
-        if (nombre) data.nombre = nombre;
-        if (apellido_paterno) data.apellido_paterno = apellido_paterno;
-        if (apellido_materno) data.apellido_materno = apellido_materno;
+        if (username !== undefined) data.username = username;
+        if (password !== undefined) data.password = password; // Se hasheará automáticamente
+        if (nombre !== undefined) data.nombre = nombre;
+        if (apellido_paterno !== undefined) data.apellido_paterno = apellido_paterno;
+        if (apellido_materno !== undefined) data.apellido_materno = apellido_materno;
         if (numero_casa !== undefined) data.numero_casa = numero_casa;
-        if (email) data.email = email;
-        if (telefono) data.telefono = telefono;
+        if (email !== undefined) data.email = email;
+        if (telefono !== undefined) data.telefono = telefono;
         
         data.documentos = documentosData;
 
@@ -395,7 +396,7 @@ exports.login = async (req, res) => {
             return JsonResponse.error(res, 'Credenciales incorrectas', 401);
         }
 
-        // Crear token JWT
+        // Objeto plano payload para dualWriter
         const payload = {
             usuario: {
                 id: usuario._id.toString(),
@@ -405,7 +406,8 @@ exports.login = async (req, res) => {
                 condominio_id: usuario.condominio_id
             }
         };
-
+        
+        // Crear token JWT
         const token = jwt.sign(
             payload,
             process.env.JWT_SECRET || 'secret-key-change-in-production',

@@ -1,12 +1,18 @@
-const Reglamento = require('../../models/Reglamento');
+const LocalReglamento = require('../../models/local/Reglamento');
+const AtlasReglamento = require('../../models/atlas/Reglamento');
+
 const JsonResponse = require('../../utils/JsonResponse');
 const Encryption = require('../../utils/encryption');
 const mongoose = require('mongoose');
 const { buildImageUrl } = require('../../utils/imageUrlHelper');
 
+const createDualWrite = require('../../utils/dualWriter');
+const reglamentoDW = createDualWrite(LocalReglamento, AtlasReglamento);
+
+// ------------READS (index, show, disponibles usaran local. Más rápido y offline).
 exports.index = async (req, res) => {
     try {
-        const reglamentos = await Reglamento.find({ condominio_id: 'C500' })
+        const reglamentos = await LocalReglamento.find({ condominio_id: 'C500' })
             .sort({ reglamento: 1 });
 
         const reglamentosConUrls = reglamentos.map(reglamento => {
@@ -40,7 +46,7 @@ exports.show = async (req, res) => {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const reglamento = await Reglamento.findById(req.params.id);
+        const reglamento = await LocalReglamento.findById(req.params.id);
 
         if (!reglamento) {
             return JsonResponse.notFound(res, 'Reglamento no encontrado');
@@ -78,7 +84,7 @@ exports.store = async (req, res) => {
             catalogo_detalle
         } = req.body;
 
-        const reglamentoExistente = await Reglamento.findOne({ reglamento });
+        const reglamentoExistente = await LocalReglamento.findOne({ reglamento });
         if (reglamentoExistente) {
             return JsonResponse.error(res, 'El reglamento ya existe', 400);
         }
@@ -88,18 +94,20 @@ exports.store = async (req, res) => {
             catalogoDetalleData.pdf_url = `reglamentos/${req.file.filename}`;
         }
 
-        const nuevoReglamento = new Reglamento({
+        // Construimos objeto plano payload para dualWrite
+        const payload ={
             reglamento,
             condominio_id: 'C500',
             nombre,
-            descripcion: descripcion || '',
+            descripcion: descripcion ?? null,
             estado: estado || 'activo',
             catalogo_detalle: catalogoDetalleData
-        });
+        };
 
-        await nuevoReglamento.save();
+        // dualWrite para crear en Local e intentar en Atlas (si falla, lo encola)
+        const nuevoReglamentoLocal = await reglamentoDW.create(payload);
 
-        const reglamentoObj = nuevoReglamento.toObject();
+        const reglamentoObj = nuevoReglamentoLocal.toObject();
         if (reglamentoObj.catalogo_detalle?.pdf_url) {
             reglamentoObj.catalogo_detalle.pdf_url = buildImageUrl(req, reglamentoObj.catalogo_detalle.pdf_url);
         }
@@ -120,7 +128,7 @@ exports.update = async (req, res) => {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const reglamento = await Reglamento.findById(req.params.id);
+        const reglamento = await LocalReglamento.findById(req.params.id);
         if (!reglamento) {
             return JsonResponse.notFound(res, 'Reglamento no encontrado');
         }
@@ -132,26 +140,39 @@ exports.update = async (req, res) => {
             catalogo_detalle
         } = req.body;
 
-        if (req.file) {
-            if (!reglamento.catalogo_detalle) reglamento.catalogo_detalle = {};
-            reglamento.catalogo_detalle.pdf_url = `reglamentos/${req.file.filename}`;
-        }
+        // Objeto plano updates para dualWrite
+        const updates = {};
+        updates.condominio_id = 'C500';
+        if (nombre !== undefined) updates.nombre = nombre;
+        if (descripcion !== undefined) updates.descripcion = descripcion;
+        if (estado !== undefined) updates.estado = estado;
 
-        if (nombre) reglamento.nombre = nombre;
-        if (descripcion !== undefined) reglamento.descripcion = descripcion;
-        if (estado) reglamento.estado = estado;
-        if (catalogo_detalle) {
+        // BUILD merge seguro para catalogo_detalle
+        const original = reglamento.catalogo_detalle?.toObject?.() ?? reglamento.catalogo_detalle ?? {};
+        let mergeData = {};
+
+        if (catalogo_detalle !== undefined) {
             try {
-                const catalogoData = typeof catalogo_detalle === 'string' ? JSON.parse(catalogo_detalle) : catalogo_detalle;
-                reglamento.catalogo_detalle = { ...reglamento.catalogo_detalle, ...catalogoData };
+                mergeData = typeof catalogo_detalle === 'string' ? JSON.parse(catalogo_detalle) : catalogo_detalle;
             } catch {
-                reglamento.catalogo_detalle = { ...reglamento.catalogo_detalle, ...catalogo_detalle };
+                mergeData = catalogo_detalle;
             }
         }
 
-        await reglamento.save();
+         let finalCatalogo = { ...original, ...mergeData };
+        
+         if (req.file) {
+            finalCatalogo.pdf_url = `reglamentos/${req.file.filename}`;
+        }
 
-        const reglamentoObj = reglamento.toObject();
+        if (catalogo_detalle !== undefined || req.file) {
+            updates.catalogo_detalle = finalCatalogo;
+        }
+
+        // dualWrite Local -> Atlas
+        const updated = await reglamentoDW.update(req.params.id, updates);
+
+        const reglamentoObj = updated.toObject();
         if (reglamentoObj.catalogo_detalle?.pdf_url) {
             reglamentoObj.catalogo_detalle.pdf_url = buildImageUrl(req, reglamentoObj.catalogo_detalle.pdf_url);
         }
@@ -179,12 +200,13 @@ exports.destroy = async (req, res) => {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const reglamento = await Reglamento.findById(req.params.id);
+        const reglamento = await LocalReglamento.findById(req.params.id);
         if (!reglamento) {
             return JsonResponse.notFound(res, 'Reglamento no encontrado');
         }
 
-        await Reglamento.findByIdAndDelete(req.params.id);
+        // dualWrite
+        await reglamentoDW.delete(req.params.id);
 
         return JsonResponse.success(res, null, 'Reglamento eliminado exitosamente');
     } catch (error) {

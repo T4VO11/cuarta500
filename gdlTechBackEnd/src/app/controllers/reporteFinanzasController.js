@@ -1,12 +1,19 @@
-const ReporteFinanza = require('../../models/ReporteFinanza');
+const LocalReporteFinanza = require('../../models/local/ReporteFinanza');
+const AtlasReporteFinanza = require('../../models/atlas/ReporteFinanza');
+
+
 const JsonResponse = require('../../utils/JsonResponse');
 const Encryption = require('../../utils/encryption');
 const mongoose = require('mongoose');
 const { buildImageUrl } = require('../../utils/imageUrlHelper');
 
+const createDualWriter = require('../../utils/dualWriter');
+const reporteFinanzasDW = createDualWriter(LocalReporteFinanza, AtlasReporteFinanza);
+
+// ------------READS (index, show, disponibles usaran local. Más rápido y offline).
 exports.index = async (req, res) => {
     try {
-        const reportes = await ReporteFinanza.find({ condominio_id: 'C500' })
+        const reportes = await LocalReporteFinanza.find({ condominio_id: 'C500' })
             .sort({ reporte_id: -1 });
 
         const reportesConUrls = reportes.map(reporte => {
@@ -40,7 +47,7 @@ exports.show = async (req, res) => {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const reporte = await ReporteFinanza.findById(req.params.id);
+        const reporte = await LocalReporteFinanza.findById(req.params.id);
 
         if (!reporte) {
             return JsonResponse.notFound(res, 'Reporte no encontrado');
@@ -81,7 +88,7 @@ exports.store = async (req, res) => {
             evidencia
         } = req.body;
 
-        const reporteExistente = await ReporteFinanza.findOne({ reporte_id });
+        const reporteExistente = await LocalReporteFinanza.findOne({ reporte_id });
         if (reporteExistente) {
             return JsonResponse.error(res, 'El reporte_id ya existe', 400);
         }
@@ -91,21 +98,23 @@ exports.store = async (req, res) => {
             evidenciaData.imagen_url = `uploads/reporteFinanzas/${req.file.filename}`;
         }
 
-        const nuevoReporte = new ReporteFinanza({
+        // Construimos payload para dualWriter
+        const payload  ={
             reporte_id,
             condominio_id: 'C500',
             concepto,
             fecha,
-            monto,
+            monto: Number(monto),
             categoria,
-            descripcion: descripcion || '',
+            descripcion: descripcion ?? null,
             usuario_id,
             evidencia: evidenciaData
-        });
+        };
 
-        await nuevoReporte.save();
+        // Creamos en dualWrite Local -> Atlas
+        const nuevoReporteLocal = await reporteFinanzasDW.create(payload);
 
-        const reporteObj = nuevoReporte.toObject();
+        const reporteObj = nuevoReporteLocal.toObject();
         if (reporteObj.evidencia?.imagen_url) {
             reporteObj.evidencia.imagen_url = buildImageUrl(req, reporteObj.evidencia.imagen_url);
         }
@@ -126,7 +135,7 @@ exports.update = async (req, res) => {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const reporte = await ReporteFinanza.findById(req.params.id);
+        const reporte = await LocalReporteFinanza.findById(req.params.id);
         if (!reporte) {
             return JsonResponse.notFound(res, 'Reporte no encontrado');
         }
@@ -145,23 +154,27 @@ exports.update = async (req, res) => {
             reporte.evidencia.imagen_url = `uploads/reporteFinanzas/${req.file.filename}`;
         }
 
-        if (concepto) reporte.concepto = concepto;
-        if (fecha) reporte.fecha = fecha;
-        if (monto !== undefined) reporte.monto = monto;
-        if (categoria) reporte.categoria = categoria;
-        if (descripcion !== undefined) reporte.descripcion = descripcion;
-        if (evidencia) {
+        // Creamos objeto updates para dualWrite
+        const updates = {};
+        updates.condominio_id = 'C500';
+        if (concepto !== undefined) updates.concepto = concepto;
+        if (fecha !== undefined) updates.fecha = fecha;
+        if (monto !== undefined) updates.monto = monto;
+        if (categoria !== undefined) updates.categoria = categoria;
+        if (descripcion !== undefined) updates.descripcion = descripcion;
+        if (evidencia !== undefined) {
             try {
                 const evidenciaData = typeof evidencia === 'string' ? JSON.parse(evidencia) : evidencia;
-                reporte.evidencia = { ...reporte.evidencia, ...evidenciaData };
+                updates.evidencia = { ...reporte.evidencia, ...evidenciaData };
             } catch {
-                reporte.evidencia = { ...reporte.evidencia, ...evidencia };
+                updates.evidencia = { ...reporte.evidencia, ...evidencia };
             }
         }
 
-        await reporte.save();
+        // Actualizamos con dualWrite Local -> Atlas
+        const updated = await reporteFinanzasDW.update(req.params.id, updates);
 
-        const reporteObj = reporte.toObject();
+        const reporteObj = updated.toObject();
         if (reporteObj.evidencia?.imagen_url) {
             reporteObj.evidencia.imagen_url = buildImageUrl(req, reporteObj.evidencia.imagen_url);
         }
@@ -189,12 +202,12 @@ exports.destroy = async (req, res) => {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const reporte = await ReporteFinanza.findById(req.params.id);
+        const reporte = await LocalReporteFinanza.findById(req.params.id);
         if (!reporte) {
             return JsonResponse.notFound(res, 'Reporte no encontrado');
         }
 
-        await ReporteFinanza.findByIdAndDelete(req.params.id);
+        await reporteFinanzasDW.delete(req.params.id);
 
         return JsonResponse.success(res, null, 'Reporte eliminado exitosamente');
     } catch (error) {

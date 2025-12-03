@@ -1,11 +1,17 @@
-const InvitarAmigo = require('../../models/InvitarAmigo');
+const LocalInvitarAmigo = require('../../models/local/InvitarAmigo');
+const AtlasInvitarAmigo = require('../../models/atlas/InvitarAmigo');
+
 const JsonResponse = require('../../utils/JsonResponse');
 const Encryption = require('../../utils/encryption');
 const mongoose = require('mongoose');
 
+const createDualWriter = require('../../utils/dualWriter')
+const invitarAmigoDW = createDualWriter(LocalInvitarAmigo, AtlasInvitarAmigo);
+
+// ------------READS (index, show, disponibles usaran local. Más rápido y offline).
 exports.index = async (req, res) => {
     try {
-        const invitaciones = await InvitarAmigo.find({ condominio_id: 'C500' })
+        const invitaciones = await LocalInvitarAmigo.find({ condominio_id: 'C500' })
             .sort({ createdAt: -1 });
 
         // if (req.query.encrypt === 'true') {
@@ -31,7 +37,7 @@ exports.show = async (req, res) => {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const invitacion = await InvitarAmigo.findById(req.params.id);
+        const invitacion = await LocalInvitarAmigo.findById(req.params.id);
 
         if (!invitacion) {
             return JsonResponse.notFound(res, 'Invitación no encontrada');
@@ -77,12 +83,13 @@ exports.store = async (req, res) => {
             vehiculo
         } = req.body;
 
-        const invitacionExistente = await InvitarAmigo.findOne({ invitacion_id });
+        const invitacionExistente = await LocalInvitarAmigo.findOne({ invitacion_id });
         if (invitacionExistente) {
             return JsonResponse.error(res, 'El invitacion_id ya existe', 400);
         }
 
-        const nuevaInvitacion = new InvitarAmigo({
+        // Manejamos objeto plano 'payload' para usar dualWriter en lugar de la instancia Mongooose
+    const payload = {
             invitacion_id,
             condominio_id: 'C500',
             usuario_id,
@@ -98,15 +105,16 @@ exports.store = async (req, res) => {
             fecha_inicio: fecha_inicio || '',
             fecha_fin: fecha_fin || '',
             numero_usos: numero_usos || 0,
-            areas_permitidas: areas_permitidas || [],
+            areas_permitidas: areas_permitidas ? (typeof areas_permitidas === "string" ? JSON.parse(areas_permitidas) : areas_permitidas) : {},
             notas_adicionales: notas_adicionales || '',
             estado: estado || 'pendiente',
             vehiculo: vehiculo ? (typeof vehiculo === 'string' ? JSON.parse(vehiculo) : vehiculo) : {}
-        });
+        };
 
-        await nuevaInvitacion.save();
+        // Usamos dualWriter para crear en local e intentar en Atlas, (si falla, lo encola)
+        const nuevaInvitacionLocal = await invitarAmigoDW.create(payload);
 
-        return JsonResponse.success(res, nuevaInvitacion, 'Invitación creada exitosamente', 201);
+        return JsonResponse.success(res, nuevaInvitacionLocal, 'Invitación creada exitosamente', 201);
     } catch (error) {
         console.error('Error en store invitarAmigo:', error);
         if (error.code === 11000) {
@@ -116,13 +124,14 @@ exports.store = async (req, res) => {
     }
 };
 
+// ------------ UPDATE (con dualWriter) ------------ 
 exports.update = async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const invitacion = await InvitarAmigo.findById(req.params.id);
+        const invitacion = await LocalInvitarAmigo.findById(req.params.id);
         if (!invitacion) {
             return JsonResponse.notFound(res, 'Invitación no encontrada');
         }
@@ -146,32 +155,46 @@ exports.update = async (req, res) => {
             vehiculo
         } = req.body;
 
-        if (numeroCasa !== undefined) invitacion.numeroCasa = numeroCasa;
-        if (nombre_invitado) invitacion.nombre_invitado = nombre_invitado;
-        if (codigo_acceso) invitacion.codigo_acceso = codigo_acceso;
-        if (fecha_visita) invitacion.fecha_visita = fecha_visita;
-        if (correo_electronico !== undefined) invitacion.correo_electronico = correo_electronico;
-        if (proposito_visita) invitacion.proposito_visita = proposito_visita;
-        if (hora_inicio !== undefined) invitacion.hora_inicio = hora_inicio;
-        if (hora_fin !== undefined) invitacion.hora_fin = hora_fin;
-        if (tipo_qr) invitacion.tipo_qr = tipo_qr;
-        if (fecha_inicio !== undefined) invitacion.fecha_inicio = fecha_inicio;
-        if (fecha_fin !== undefined) invitacion.fecha_fin = fecha_fin;
-        if (numero_usos !== undefined) invitacion.numero_usos = numero_usos;
-        if (areas_permitidas !== undefined) invitacion.areas_permitidas = areas_permitidas;
-        if (notas_adicionales !== undefined) invitacion.notas_adicionales = notas_adicionales;
-        if (estado) invitacion.estado = estado;
-        if (vehiculo) {
+        const updates = {}
+        updates.condominio_id = 'C500';
+        if (numeroCasa !== undefined) updates.numeroCasa = numeroCasa;
+        if (nombre_invitado !== undefined) updates.nombre_invitado = nombre_invitado;
+        if (codigo_acceso !== undefined) updates.codigo_acceso = codigo_acceso;
+        if (fecha_visita !== undefined) updates.fecha_visita = fecha_visita;
+        if (correo_electronico !== undefined) updates.correo_electronico = correo_electronico;
+        if (proposito_visita !== undefined) updates.proposito_visita = proposito_visita;
+        if (hora_inicio !== undefined) updates.hora_inicio = hora_inicio;
+        if (hora_fin !== undefined) updates.hora_fin = hora_fin;
+        if (tipo_qr !== undefined) updates.tipo_qr = tipo_qr;
+        if (fecha_inicio !== undefined) updates.fecha_inicio = fecha_inicio;
+        if (fecha_fin !== undefined) updates.fecha_fin = fecha_fin;
+        if (numero_usos !== undefined) updates.numero_usos = numero_usos;
+        if (notas_adicionales !== undefined) updates.notas_adicionales = notas_adicionales;
+        if (estado !== undefined) updates.estado = estado;
+
+        // Areas permitidas  (objeto a JSON)
+        if (areas_permitidas !== undefined) {
             try {
-                const vehiculoData = typeof vehiculo === 'string' ? JSON.parse(vehiculo) : vehiculo;
-                invitacion.vehiculo = { ...invitacion.vehiculo, ...vehiculoData };
+                updates.areas_permitidas = typeof areas_permitidas === "string" ? JSON.parse(areas_permitidas) : areas_permitidas;
             } catch {
-                invitacion.vehiculo = { ...invitacion.vehiculo, ...vehiculo };
+                updates.areas_permitidas = areas_permitidas;
             }
         }
 
-        await invitacion.save();
+        // Vehiculo (merge con datos ya existentes)
+        if (vehiculo !== undefined) {
+            try {
+                const vehiculoData = typeof vehiculo === 'string' ? JSON.parse(vehiculo) : vehiculo;
+                updates.vehiculo = { ...(invitacion.vehiculo || {}), ...vehiculoData };
+            } catch {
+                updates.vehiculo = { ...(invitacion.vehiculo || {}), ...vehiculo };
+            }
+        }
 
+        // actualizamos con dualwrite (Local -> Atlas)
+        const updated = await invitarAmigoDW.update(req.params.id, updates);
+
+        const invitacionObj = updated.toObject();
         // if (req.query.encrypt === 'true') {
         //     const responseData = {
         //         estado: 'exito',
@@ -182,7 +205,7 @@ exports.update = async (req, res) => {
         //     return res.json(encryptedResponse);
         // }
 
-        return JsonResponse.success(res, invitacion, 'Invitación actualizada exitosamente');
+        return JsonResponse.success(res, invitacionObj, 'Invitación actualizada exitosamente');
     } catch (error) {
         console.error('Error en update invitarAmigo:', error);
         return JsonResponse.error(res, 'Error al actualizar invitación', 500);
@@ -195,12 +218,13 @@ exports.destroy = async (req, res) => {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const invitacion = await InvitarAmigo.findById(req.params.id);
+        const invitacion = await LocalInvitarAmigo.findById(req.params.id);
         if (!invitacion) {
             return JsonResponse.notFound(res, 'Invitación no encontrada');
         }
 
-        await InvitarAmigo.findByIdAndDelete(req.params.id);
+        // dualWrite para eliminar Local -> Atlas
+        await invitarAmigoDW.delete(req.params.id);
 
         return JsonResponse.success(res, null, 'Invitación eliminada exitosamente');
     } catch (error) {
@@ -219,12 +243,10 @@ exports.misInvitaciones = async (req, res) => {
             return JsonResponse.error(res, 'Usuario no identificado', 401);
         }
 
-        const usuarioIdNum = Number(usuario_id);
-        
         // Buscar invitaciones del usuario
-        const invitaciones = await InvitarAmigo.find({ 
+        const invitaciones = await LocalInvitarAmigo.find({ 
             condominio_id: 'C500',
-            usuario_id: usuarioIdNum
+            usuario_id: Number(usuario_id)
         })
         .sort({ createdAt: -1 });
 

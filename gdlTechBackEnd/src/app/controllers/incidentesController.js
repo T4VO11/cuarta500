@@ -131,6 +131,7 @@ exports.update = async (req, res) => {
         } = req.body;
 
         const updates = {};
+        updates.condominio_id = 'C500';
         if (asunto !== undefined) updates.asunto = asunto;
         if (numeroCasa !== undefined) updates.numeroCasa = numeroCasa;
         if (fecha_reporte !== undefined) updates.fecha_reporte = fecha_reporte;
@@ -167,7 +168,7 @@ exports.destroy = async (req, res) => {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const incidente = await Incidente.findById(req.params.id);
+        const incidente = await LocalIncidente.findById(req.params.id);
         if (!incidente) {
             return JsonResponse.notFound(res, 'Incidente no encontrado');
         }

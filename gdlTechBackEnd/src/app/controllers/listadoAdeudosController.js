@@ -1,10 +1,17 @@
-const ListadoAdeudo = require('../../models/ListadoAdeudo');
+const LocalListadoAdeudo = require('../../models/local/ListadoAdeudo');
+const AtlasListadoAdeudo = require('../../models/atlas/ListadoAdeudo');
+
 const JsonResponse = require('../../utils/JsonResponse');
 const Encryption = require('../../utils/encryption');
 const mongoose = require('mongoose');
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
+const createDualWriter = require('../../utils/dualWriter');
+const listadoAdeudoDW = createDualWriter(LocalListadoAdeudo, AtlasListadoAdeudo);
+
+
+// ------------READS (index, show, disponibles usaran local. Más rápido y offline).
 exports.index = async (req, res) => {
     try {
         // Si el usuario no es administrador, solo mostrar sus propios adeudos
@@ -15,8 +22,11 @@ exports.index = async (req, res) => {
         if (!esAdmin && usuario_id) {
             query.usuario_id = usuario_id;
         }
+        if (!esAdmin && !usuario_id) {
+            return JsonResponse.error(res, 'Usuario no autenticado', 401)
+        }
 
-        const adeudos = await ListadoAdeudo.find(query)
+        const adeudos = await LocalListadoAdeudo.find(query)
             .sort({ transaccion_id: -1 });
 
         // if (req.query.encrypt === 'true') {
@@ -42,7 +52,7 @@ exports.show = async (req, res) => {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const adeudo = await ListadoAdeudo.findById(req.params.id);
+        const adeudo = await LocalListadoAdeudo.findById(req.params.id);
 
         if (!adeudo) {
             return JsonResponse.notFound(res, 'Adeudo no encontrado');
@@ -65,6 +75,7 @@ exports.show = async (req, res) => {
     }
 };
 
+// ------------ CREATE (usando dualWriter) ------------ 
 exports.store = async (req, res) => {
     try {
         const {
@@ -88,36 +99,47 @@ exports.store = async (req, res) => {
             estado_casas
         } = req.body;
 
-        const adeudoExistente = await ListadoAdeudo.findOne({ transaccion_id });
+        const adeudoExistente = await LocalListadoAdeudo.findOne({ transaccion_id });
         if (adeudoExistente) {
             return JsonResponse.error(res, 'El transaccion_id ya existe', 400);
         }
 
-        const nuevoAdeudo = new ListadoAdeudo({
+        let parsedEstadoCasas = [];
+        if (estado_casas !== undefined) {
+            try {
+                const temp = typeof estado_casas === "string" ? JSON.parse(estado_casas) : estado_casas;
+                parsedEstadoCasas = Array.isArray(temp) ? temp : [];
+            } catch {
+                parsedEstadoCasas = [];
+            }
+        }
+        // Construimos un objeto plano, en lugar de la instancia Mongoose
+        const payload = {
             transaccion_id,
             condominio_id: 'C500',
             tipo_registro,
             usuario_id,
             periodo_cubierto,
             monto_base,
-            monto_total_pagado: monto_total_pagado || 0,
-            fecha_pago: fecha_pago || '',
+            monto_total_pagado: monto_total_pagado ?? null,
+            fecha_pago: fecha_pago ?? null,
             fecha_limite_pago,
             estado: estado || 'pendiente',
             dashboard_id: dashboard_id || null,
-            tipo: tipo || '',
-            periodo: periodo || '',
-            total_unidades: total_unidades || 0,
-            unidades_pagadas: unidades_pagadas || 0,
-            unidades_pendientes: unidades_pendientes || 0,
-            monto_recaudado: monto_recaudado || 0,
+            tipo: tipo ?? null,
+            periodo: periodo ?? null,
+            total_unidades: total_unidades ?? null,
+            unidades_pagadas: unidades_pagadas ?? null,
+            unidades_pendientes: unidades_pendientes ?? null,
+            monto_recaudado: monto_recaudado ?? null,
             pasarela_pago: pasarela_pago ? (typeof pasarela_pago === 'string' ? JSON.parse(pasarela_pago) : pasarela_pago) : {},
-            estado_casas: estado_casas ? (Array.isArray(estado_casas) ? estado_casas : JSON.parse(estado_casas)) : []
-        });
+            estado_casas: parsedEstadoCasas
+        };
 
-        await nuevoAdeudo.save();
+        // creamos con dualwrite Local -> Atlas (Si falla, lo encola)
+        const nuevoAdeudoLocal = await listadoAdeudoDW.create(payload); 
 
-        return JsonResponse.success(res, nuevoAdeudo, 'Adeudo creado exitosamente', 201);
+        return JsonResponse.success(res, nuevoAdeudoLocal, 'Adeudo creado exitosamente', 201);
     } catch (error) {
         console.error('Error en store listadoAdeudo:', error);
         if (error.code === 11000) {
@@ -127,13 +149,14 @@ exports.store = async (req, res) => {
     }
 };
 
+// ------------ UPDATE (usa dualWriter) ------------ 
 exports.update = async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const adeudo = await ListadoAdeudo.findById(req.params.id);
+        const adeudo = await LocalListadoAdeudo.findById(req.params.id);
         if (!adeudo) {
             return JsonResponse.notFound(res, 'Adeudo no encontrado');
         }
@@ -145,27 +168,33 @@ exports.update = async (req, res) => {
             'unidades_pendientes', 'monto_recaudado', 'pasarela_pago', 'estado_casas'
         ];
 
+        // Armado de updates para dualWrite
+        const updates = {};
+        updates.condominio_id = 'C500';
+
         camposPermitidos.forEach(campo => {
             if (req.body[campo] !== undefined) {
                 if (campo === 'pasarela_pago') {
                     try {
-                        adeudo[campo] = typeof req.body[campo] === 'string' ? JSON.parse(req.body[campo]) : req.body[campo];
+                        updates[campo] = typeof req.body[campo] === 'string' ? JSON.parse(req.body[campo]) : req.body[campo];
                     } catch {
-                        adeudo[campo] = req.body[campo];
+                        updates[campo] = req.body[campo];
                     }
                 } else if (campo === 'estado_casas') {
                     try {
-                        adeudo[campo] = Array.isArray(req.body[campo]) ? req.body[campo] : JSON.parse(req.body[campo]);
+                        updates[campo] = Array.isArray(req.body[campo]) ? req.body[campo] : JSON.parse(req.body[campo]);
                     } catch {
-                        adeudo[campo] = req.body[campo];
+                        updates[campo] = req.body[campo];
                     }
                 } else {
-                    adeudo[campo] = req.body[campo];
+                    updates[campo] = req.body[campo];
                 }
             }
         });
 
-        await adeudo.save();
+        const updated = await listadoAdeudoDW.update(req.params.id, updates);
+
+        const adeudoObj = updated.toObject();
 
         // if (req.query.encrypt === 'true') {
         //     const responseData = {
@@ -177,7 +206,7 @@ exports.update = async (req, res) => {
         //     return res.json(encryptedResponse);
         // }
 
-        return JsonResponse.success(res, adeudo, 'Adeudo actualizado exitosamente');
+        return JsonResponse.success(res, adeudoObj, 'Adeudo actualizado exitosamente');
     } catch (error) {
         console.error('Error en update listadoAdeudo:', error);
         return JsonResponse.error(res, 'Error al actualizar adeudo', 500);
@@ -190,14 +219,15 @@ exports.destroy = async (req, res) => {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const adeudo = await ListadoAdeudo.findById(req.params.id);
+        const adeudo = await LocalListadoAdeudo.findById(req.params.id);
         if (!adeudo) {
             return JsonResponse.notFound(res, 'Adeudo no encontrado');
         }
 
-        await ListadoAdeudo.findByIdAndDelete(req.params.id);
+        // dualWrite (eliminar Local -> Atlas)
+        await listadoAdeudoDW.delete(req.params.id);
 
-        return JsonResponse.success(res, null, 'Adeudo eliminado exitosamente');
+        return JsonResponse.success(res, null, 'Adeudo eliminado exitosamente', 204);
     } catch (error) {
         console.error('Error en destroy listadoAdeudo:', error);
         return JsonResponse.error(res, 'Error al eliminar adeudo', 500);
@@ -215,7 +245,7 @@ exports.misAdeudos = async (req, res) => {
         }
 
         // Buscar adeudos del usuario
-        const adeudos = await ListadoAdeudo.find({ 
+        const adeudos = await LocalListadoAdeudo.find({ 
             condominio_id: 'C500',
             usuario_id: usuario_id
         })

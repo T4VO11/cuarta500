@@ -1,5 +1,7 @@
-const Reservacion = require('../../models/Reservacion');
-const Usuario = require('../../models/Usuario');
+const LocalReservacion = require('../../models/local/Reservacion');
+const AtlasReservacion = require('../../models/atlas/Reservacion');
+const LocalUsuario = require('../../models/local/Usuario')
+
 const JsonResponse = require('../../utils/JsonResponse');
 const Encryption = require('../../utils/encryption');
 const mongoose = require('mongoose');
@@ -7,9 +9,13 @@ const Amenidad = require('../../models/Amenidad'); // Necesario para sacar los p
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
+const createDualWriter = require('../../utils/dualWriter');
+const reservacionesDW = createDualWriter(LocalReservacion, AtlasReservacion);
+
+// ------------READS (index, show, disponibles usaran local. Más rápido y offline).
 exports.index = async (req, res) => {
     try {
-        const reservaciones = await Reservacion.find()
+        const reservaciones = await LocalReservacion.find()
             .sort({ reservacion_id: -1 });
 
         // if (req.query.encrypt === 'true') {
@@ -31,23 +37,18 @@ exports.index = async (req, res) => {
 
 exports.show = async (req, res) => {
     try {
-        // Si el ID está vacío o es undefined, devolver error más descriptivo
-        if (!req.params.id || req.params.id === 'undefined' || req.params.id === 'null') {
-            return JsonResponse.error(res, 'ID no proporcionado', 400);
-        }
-
         let reservacion;
-        
+
         // Intentar buscar por ObjectId primero
         if (mongoose.Types.ObjectId.isValid(req.params.id)) {
-            reservacion = await Reservacion.findById(req.params.id);
+            reservacion = await LocalReservacion.findById(req.params.id);
         }
         
         // Si no se encontró por ObjectId, intentar por reservacion_id
         if (!reservacion) {
             const reservacionIdNum = parseInt(req.params.id);
             if (!isNaN(reservacionIdNum)) {
-                reservacion = await Reservacion.findOne({ reservacion_id: reservacionIdNum });
+                reservacion = await LocalReservacion.findOne({ reservacion_id: reservacionIdNum });
             }
         }
 
@@ -66,7 +67,7 @@ exports.show = async (req, res) => {
         //     return res.json(encryptedResponse);
         // }
 
-        return JsonResponse.success(res, reservacion, 'Reservación obtenida exitosamente');
+        return JsonResponse.success(res, reservacion.toObject(), 'Reservación obtenida exitosamente');
     } catch (error) {
         console.error('Error en show reservacion:', error);
         return JsonResponse.error(res, 'Error al obtener reservación', 500);
@@ -86,29 +87,40 @@ exports.store = async (req, res) => {
             estado_pago
         } = req.body;
 
-        const reservacionExistente = await Reservacion.findOne({ reservacion_id });
+        const reservacionExistente = await LocalReservacion.findOne({ reservacion_id });
         if (reservacionExistente) {
             return JsonResponse.error(res, 'El reservacion_id ya existe', 400);
+        }
+
+        // Parse seguro de servicios_extra
+        let servicios = servicios_extra;
+        try {
+            if (typeof servicios_extra === 'string') {
+                servicios = JSON.parse(servicios_extra);
+            }
+            } catch {
+                servicios = servicios_extra;
         }
 
         // Obtener usuario_id del token si está disponible (para admins que crean reservaciones)
         const usuario_id = req.usuario?.usuario_id;
 
-        const nuevaReservacion = new Reservacion({
+        const payload ={
             reservacion_id,
             nombre_residente,
             telefono,
             fecha_evento,
-            servicios_extra: servicios_extra ? (Array.isArray(servicios_extra) ? servicios_extra : JSON.parse(servicios_extra)) : [],
+            servicios_extra: servicios || [],
             total,
             estado: estado || 'pendiente',
             estado_pago: estado_pago || 'pendiente',
-            usuario_id: usuario_id || null
-        });
+            usuario_id: usuario_id ?? null
+        };
 
-        await nuevaReservacion.save();
+        // Usamos dualWriter para crear Local -> Atlas, si falla lo encola
+        const nuevaReservacionLocal = await reservacionesDW.create(payload);
 
-        return JsonResponse.success(res, nuevaReservacion, 'Reservación creada exitosamente', 201);
+        return JsonResponse.success(res, nuevaReservacionLocal, 'Reservación creada exitosamente', 201);
     } catch (error) {
         console.error('Error en store reservacion:', error);
         if (error.code === 11000) {
@@ -123,7 +135,6 @@ exports.crear = async (req, res) => {
     try {
         // Obtener usuario_id del token JWT
         const usuario_id = req.usuario?.usuario_id;
-        
         if (!usuario_id) {
             return JsonResponse.error(res, 'Usuario no identificado', 401);
         }
@@ -139,34 +150,45 @@ exports.crear = async (req, res) => {
         } = req.body;
 
         // Generar el siguiente reservacion_id
-        const ultimaReservacion = await Reservacion.findOne().sort({ reservacion_id: -1 });
+        const ultimaReservacion = await LocalReservacion.findOne().sort({ reservacion_id: -1 });
         let reservacion_id = ultimaReservacion ? ultimaReservacion.reservacion_id + 1 : 1;
 
         // Verificar que no exista (por si acaso)
-        const reservacionExistente = await Reservacion.findOne({ reservacion_id });
+        const reservacionExistente = await LocalReservacion.findOne({ reservacion_id });
         if (reservacionExistente) {
             // Si existe, buscar el siguiente disponible
-            while (await Reservacion.findOne({ reservacion_id })) {
+            while (await LocalReservacion.findOne({ reservacion_id })) {
                 reservacion_id++;
+            }
+        }
+
+        // parse seguro servicios_extra
+        let servicios = [];
+        if (servicios_extra !== undefined && servicios_extra !== null && servicios_extra !== '') {
+            try { 
+                servicios = Array.isArray(servicios_extra) ? servicios_extra : JSON.parse(servicios_extra); 
+            } catch { 
+                servicios = []; 
             }
         }
 
         // Convertir usuario_id a Number para asegurar que coincida con el tipo en la BD
         const usuarioIdNum = Number(usuario_id);
         
-        const nuevaReservacion = new Reservacion({
+        const payload = {
             reservacion_id,
             nombre_residente,
             telefono,
             fecha_evento,
-            servicios_extra: servicios_extra ? (Array.isArray(servicios_extra) ? servicios_extra : JSON.parse(servicios_extra)) : [],
+            servicios_extra: servicios,
             total,
             estado: estado || 'pendiente',
             estado_pago: estado_pago || 'pendiente',
             usuario_id: usuarioIdNum
-        });
+        };
 
-        await nuevaReservacion.save();
+        // Creamos con dualWrite inserta Local e intenta en Atlas. Si falla, lo encola
+        const crearReservacionLocal = await reservacionesDW.create(payload);
 
         // if (req.query.encrypt === 'true') {
         //     const responseData = {
@@ -178,7 +200,7 @@ exports.crear = async (req, res) => {
         //     return res.json(encryptedResponse);
         // }
 
-        return JsonResponse.success(res, nuevaReservacion, 'Reservación creada exitosamente', 201);
+        return JsonResponse.success(res, crearReservacionLocal, 'Reservación creada exitosamente', 201);
     } catch (error) {
         console.error('Error en crear reservacion:', error);
         if (error.code === 11000) {
@@ -194,14 +216,14 @@ exports.update = async (req, res) => {
         
         // Intentar buscar por ObjectId primero
         if (mongoose.Types.ObjectId.isValid(req.params.id)) {
-            reservacion = await Reservacion.findById(req.params.id);
+            reservacion = await LocalReservacion.findById(req.params.id);
         }
         
         // Si no se encontró por ObjectId, intentar por reservacion_id
         if (!reservacion) {
             const reservacionIdNum = parseInt(req.params.id);
             if (!isNaN(reservacionIdNum)) {
-                reservacion = await Reservacion.findOne({ reservacion_id: reservacionIdNum });
+                reservacion = await LocalReservacion.findOne({ reservacion_id: reservacionIdNum });
             }
         }
         
@@ -220,23 +242,28 @@ exports.update = async (req, res) => {
             estado_pago
         } = req.body;
 
-        if (nombre_residente) reservacion.nombre_residente = nombre_residente;
-        if (telefono) reservacion.telefono = telefono;
-        if (fecha_evento) reservacion.fecha_evento = fecha_evento;
+        // Creamos variable updates para dualWrite
+        const updates = {};
+        // updates.condominio_id = 'C500'; //TODAVIA NO ESTA DE ALTA EN LA COLECCION
+        if (nombre_residente !== undefined) updates.nombre_residente = nombre_residente;
+        if (telefono !== undefined) updates.telefono = telefono;
+        if (fecha_evento !== undefined) updates.fecha_evento = fecha_evento;
         if (servicios_extra !== undefined) {
             try {
-                reservacion.servicios_extra = Array.isArray(servicios_extra) ? servicios_extra : JSON.parse(servicios_extra);
+                updates.servicios_extra = Array.isArray(servicios_extra) ? servicios_extra : JSON.parse(servicios_extra);
             } catch {
-                reservacion.servicios_extra = servicios_extra;
+                updates.servicios_extra = servicios_extra;
             }
         }
-        if (total !== undefined) reservacion.total = total;
-        if (estado) reservacion.estado = estado;
-        if (estado_pago) reservacion.estado_pago = estado_pago;
-        reservacion.updated_at = new Date();
+        if (total !== undefined) updates.total = total;
+        if (estado !== undefined) updates.estado = estado;
+        if (estado_pago !== undefined) updates.estado_pago = estado_pago;
 
-        await reservacion.save();
+        // Actualizamos con dualWrite. Local -> Atlas, si falla lo encola
+            // Usamos el ._id real del documento para dualWriter
+        const updated = await reservacionesDW.update(reservacion._id, updates)
 
+        const reservacionObj = updated.toObject();
         // if (req.query.encrypt === 'true') {
         //     const responseData = {
         //         estado: 'exito',
@@ -247,7 +274,7 @@ exports.update = async (req, res) => {
         //     return res.json(encryptedResponse);
         // }
 
-        return JsonResponse.success(res, reservacion, 'Reservación actualizada exitosamente');
+        return JsonResponse.success(res, reservacionObj, 'Reservación actualizada exitosamente');
     } catch (error) {
         console.error('Error en update reservacion:', error);
         return JsonResponse.error(res, 'Error al actualizar reservación', 500);
@@ -260,29 +287,25 @@ exports.destroy = async (req, res) => {
         
         // Intentar buscar por ObjectId primero
         if (mongoose.Types.ObjectId.isValid(req.params.id)) {
-            reservacion = await Reservacion.findById(req.params.id);
-            if (reservacion) {
-                await Reservacion.findByIdAndDelete(req.params.id);
-            }
+            reservacion = await LocalReservacion.findById(req.params.id);
         }
         
-        // Si no se encontró por ObjectId, intentar por reservacion_id
         if (!reservacion) {
             const reservacionIdNum = parseInt(req.params.id);
             if (!isNaN(reservacionIdNum)) {
-                reservacion = await Reservacion.findOne({ reservacion_id: reservacionIdNum });
-                if (reservacion) {
-                    await Reservacion.findByIdAndDelete(reservacion._id);
-                }
+                reservacion = await LocalReservacion.findOne({ reservacion_id: reservacionIdNum });
             }
         }
-        
-        // Validar que la reservación exista
+
         if (!reservacion) {
-            return JsonResponse.notFound(res, 'Reservación no encontrada');
+            return JsonResponse.notFound(res, "Reservacion no encontrada");
         }
 
-        return JsonResponse.success(res, null, 'Reservación eliminada exitosamente');
+        // Delete con dualWriter
+        await reservacionesDW.delete(reservacion._id);
+
+        return JsonResponse.success(res, null, "Reservacion eliminada exitosamente");
+
     } catch (error) {
         console.error('Error en destroy reservacion:', error);
         return JsonResponse.error(res, 'Error al eliminar reservación', 500);
@@ -311,7 +334,7 @@ exports.misReservaciones = async (req, res) => {
         }
         
         // Obtener datos del usuario autenticado para comparar por nombre/telefono si no hay usuario_id
-        const usuario = await Usuario.findOne({ usuario_id: usuarioIdNum });
+        const usuario = await LocalUsuario.findOne({ usuario_id: usuarioIdNum });
         let nombreCompletoUsuario = null;
         let telefonoUsuario = null;
         
@@ -360,13 +383,13 @@ exports.misReservaciones = async (req, res) => {
         }
         
         // Buscar reservaciones con usuario_id
-        const reservacionesPorUsuarioId = await Reservacion.find(queryPorUsuarioId)
+        const reservacionesPorUsuarioId = await LocalReservacion.find(queryPorUsuarioId)
             .sort({ reservacion_id: -1 });
         
         // Buscar reservaciones sin usuario_id pero que coincidan por nombre o teléfono
         let reservacionesPorNombreTelefono = [];
         if (nombreCompletoUsuario || telefonoUsuario) {
-            reservacionesPorNombreTelefono = await Reservacion.find(queryAlternativa)
+            reservacionesPorNombreTelefono = await LocalReservacion.find(queryAlternativa)
                 .sort({ reservacion_id: -1 });
         }
         
