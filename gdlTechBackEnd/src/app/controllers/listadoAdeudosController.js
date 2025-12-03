@@ -2,6 +2,8 @@ const ListadoAdeudo = require('../../models/ListadoAdeudo');
 const JsonResponse = require('../../utils/JsonResponse');
 const Encryption = require('../../utils/encryption');
 const mongoose = require('mongoose');
+const Stripe = require('stripe');
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
 exports.index = async (req, res) => {
     try {
@@ -233,6 +235,116 @@ exports.misAdeudos = async (req, res) => {
     } catch (error) {
         console.error('Error en misAdeudos:', error);
         return JsonResponse.error(res, 'Error al obtener adeudos', 500);
+    }
+};
+
+// ==========================================
+// NUEVO: CREAR SESIÓN DE PAGO DE MANTENIMIENTO
+// ==========================================
+exports.crearSesionMantenimiento = async (req, res) => {
+    try {
+        // Recibimos los datos del formulario de Angular
+        const { nombre, numero_casa, periodo_cubierto, usuario_id } = req.body;
+
+        if (!nombre || !numero_casa || !periodo_cubierto) {
+            return JsonResponse.error(res, 'Faltan datos obligatorios', 400);
+        }
+
+        // Creamos la sesión de Stripe
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: [{
+                price_data: {
+                    currency: 'mxn',
+                    product_data: {
+                        name: `Mantenimiento: ${periodo_cubierto}`,
+                        description: `Casa ${numero_casa} - ${nombre}`,
+                    },
+                    unit_amount: 100000, // $1,000.00 MXN Fijo
+                },
+                quantity: 1,
+            }],
+            mode: 'payment',
+            // URLs de redirección (Ajusta la ruta según tus componentes nuevos)
+            success_url: 'http://localhost:4200/main/listadoAdeudos/exito?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url: 'http://localhost:4200/main/listadoAdeudos/create', 
+            
+            // GUARDAMOS LA INFO EN METADATA PARA USARLA AL CONFIRMAR
+            metadata: {
+                tipo_pago: 'mantenimiento',
+                nombre: nombre,
+                numero_casa: String(numero_casa),
+                periodo_cubierto: periodo_cubierto,
+                usuario_id: usuario_id || '0', // Guardamos el ID del usuario
+                condominio_id: 'C500'
+            }
+        });
+
+        return JsonResponse.success(res, { url: session.url }, 'Sesión creada');
+
+    } catch (error) {
+        console.error('Error Stripe Mantenimiento:', error);
+        return JsonResponse.error(res, 'Error al conectar con Stripe', 500);
+    }
+};
+
+// ==========================================
+// NUEVO: CONFIRMAR PAGO Y CREAR REGISTRO
+// ==========================================
+exports.confirmarPagoMantenimiento = async (req, res) => {
+    try {
+        const { session_id } = req.body;
+        
+        if (!session_id) return JsonResponse.error(res, 'Falta session_id', 400);
+
+        // 1. Verificar con Stripe
+        const session = await stripe.checkout.sessions.retrieve(session_id);
+
+        if (session.payment_status === 'paid') {
+            
+            // 2. Verificar si ya existe para no duplicar
+            const pagoExistente = await ListadoAdeudo.findOne({ transaccion_id: session.payment_intent });
+            
+            if (pagoExistente) {
+                return JsonResponse.success(res, pagoExistente, 'Pago ya registrado previamente');
+            }
+
+            // 3. Recuperar datos de Metadata
+            const datos = session.metadata;
+
+            // 4. Crear el registro en MongoDB
+            const nuevoAdeudo = new ListadoAdeudo({
+                transaccion_id: session.payment_intent, // ID real de Stripe
+                condominio_id: datos.condominio_id,
+                tipo_registro: 'pago_mantenimiento',
+                usuario_id: Number(datos.usuario_id),
+                periodo_cubierto: datos.periodo_cubierto,
+                monto_base: 1000,
+                monto_total_pagado: session.amount_total / 100, // Convertir centavos a pesos
+                fecha_pago: new Date(), // Fecha actual
+                estado: 'confirmado', // Ya está pagado
+                tipo: 'Ingreso',
+                pasarela_pago: {
+                    nombre: 'stripe',
+                    numero_transaccion: session.payment_intent
+                },
+
+                fecha_limite_pago: new Date(),
+                // Campos adicionales requeridos por tu modelo pero opcionales aquí
+                nombre: datos.nombre, // OJO: Si tu modelo no tiene 'nombre' en raíz, quítalo
+                estado_casas: [] // Array vacío por defecto
+            });
+
+            await nuevoAdeudo.save();
+
+            return JsonResponse.success(res, nuevoAdeudo, 'Pago registrado correctamente');
+        } else {
+            return JsonResponse.error(res, 'El pago no se completó', 400);
+        }
+
+    } catch (error) {
+        console.error('Error confirmando mantenimiento:', error);
+        return JsonResponse.error(res, 'Error al confirmar pago', 500);
     }
 };
 

@@ -21,7 +21,7 @@ export class ListadoAdeudosCreateComponent {
     nombre: '', 
     numero_casa: '', 
     periodo_cubierto: this.getDefaultPeriodo(), 
-    usuario_id: '2', // ID de usuario fijo para simulación
+    usuario_id: null, // ID de usuario fijo para simulación
   };
   
   isLoading: boolean = false;
@@ -33,6 +33,55 @@ export class ListadoAdeudosCreateComponent {
     monto_base: 1000,
     fecha_limite_pago: '2025-12-31T00:00:00Z', // Valor fijo para pasar la validación
   };
+
+  ngOnInit() {
+    // 1. Intentamos buscar el objeto 'usuario' (Plan A)
+    const rawUser = localStorage.getItem('usuario');
+    
+    if (rawUser) {
+        const usuarioLogueado = JSON.parse(rawUser);
+        if (usuarioLogueado.usuario_id) {
+            this.pagoForm.usuario_id = usuarioLogueado.usuario_id;
+            // Opcional: Nombre
+            if (usuarioLogueado.nombre) {
+                 this.pagoForm.nombre = `${usuarioLogueado.nombre} ${usuarioLogueado.apellido_paterno || ''}`;
+            }
+            return; // ¡Listo, lo encontramos!
+        }
+    }
+
+    // 2. Si falló el Plan A, intentamos leer del TOKEN (Plan B - El Salvador)
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+        const usuarioIdDelToken = this.obtenerIdDesdeToken(token);
+        if (usuarioIdDelToken) {
+            this.pagoForm.usuario_id = usuarioIdDelToken;
+            console.log('ID recuperado del token:', usuarioIdDelToken);
+        }
+    }
+  }
+
+  // --- FUNCIÓN AUXILIAR PARA LEER EL TOKEN ---
+  obtenerIdDesdeToken(token: string): any {
+      try {
+          const payload = token.split('.')[1];
+          const decodedJson = atob(payload);
+          const datos = JSON.parse(decodedJson);
+          
+          // --- CORRECCIÓN BASADA EN TU IMAGEN ---
+          // Primero verificamos si existe el objeto 'usuario' dentro del token
+          if (datos.usuario && datos.usuario.usuario_id) {
+              return datos.usuario.usuario_id; // Retorna 14
+          }
+          // ---------------------------------------
+
+          // Fallbacks por si acaso
+          return datos.usuario_id || datos.id;
+      } catch (error) {
+          console.error('No se pudo decodificar el token', error);
+          return null;
+      }
+  }
 
 
   // Calcula el periodo por defecto (Mes y Año actual)
@@ -50,45 +99,35 @@ export class ListadoAdeudosCreateComponent {
       alert('Por favor, llena todos los campos obligatorios.');
       return;
     }
+
+    // Validación extra de seguridad
+    if (!this.pagoForm.usuario_id) {
+        alert('Error: No se pudo identificar tu usuario. Por favor cierra sesión y vuelve a entrar.');
+        return;
+    }
     
     this.isLoading = true;
     
-    // 🚨 DATOS QUE DEBEN PASAR VALIDACIÓN
+    // Solo enviamos los datos necesarios para la metadata
     const dataToSend = {
-        // Datos de validación obligatorios
-        transaccion_id: String(Math.floor(Math.random() * 900000) + 100000), // 🚨 CLAVE: transaccion_id debe ser string
-        tipo_registro: this.DEFAULT_DATA.tipo_registro,
-        usuario_id: Number(this.pagoForm.usuario_id), // 🚨 CLAVE: usuario_id debe ser número
-        periodo_cubierto: this.pagoForm.periodo_cubierto,
-        monto_base: this.DEFAULT_DATA.monto_base,
-        fecha_limite_pago: this.DEFAULT_DATA.fecha_limite_pago,
-        
-        // Datos del formulario
         nombre: this.pagoForm.nombre,
-        numero_casa: String(this.pagoForm.numero_casa), 
-        
-        // Datos transaccionales
-        condominio_id: 'C500',
-        monto_total_pagado: 1000,
-        estado: 'confirmado',
-        fecha_pago: new Date().toISOString(),
-        pasarela_pago: {
-            nombre: 'simulado', 
-            numero_transaccion: 'SIM-' + Date.now(),
-        },
+        numero_casa: this.pagoForm.numero_casa,
+        periodo_cubierto: this.pagoForm.periodo_cubierto,
+        usuario_id: this.pagoForm.usuario_id
     };
 
-    this.adeudoService.createPago(dataToSend).subscribe({
+    // Llamamos a un servicio nuevo (o agrégalo a tu AdeudoService)
+    this.adeudoService.iniciarPagoMantenimiento(dataToSend).subscribe({
       next: (response) => {
-        this.isLoading = false;
-        alert(response.mensaje || '¡Pago de mantenimiento simulado exitosamente!');
-        this.router.navigate(['/main/adeudos']); // Redirigir al índice
+        if (response.data && response.data.url) {
+            // ¡Vámonos a Stripe!
+            window.location.href = response.data.url;
+        }
       },
       error: (err) => {
         this.isLoading = false;
-        console.error('Error al simular pago:', err);
-        // Muestra el mensaje de error de validación de Express
-        alert('Error al simular pago: ' + (err.error?.mensaje || 'Error de validación'));
+        console.error('Error Stripe:', err);
+        alert('No se pudo iniciar el pago.');
       }
     });
   }

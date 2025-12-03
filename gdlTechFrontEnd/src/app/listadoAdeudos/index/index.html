@@ -66,8 +66,10 @@
                         <tr *ngFor="let adeudo of filteredAdeudos" class="align-middle">
                             <td>{{ adeudo.transaccion_id }}</td>
                             <td>
-                                <strong>{{ adeudo.nombre }}</strong> <br>
-                                <!-- <span class="text-muted">Casa {{ adeudo.numero_casa }} (ID: {{ adeudo.usuario_id }})</span> -->
+                                <strong>
+                                    {{ adeudo.nombre ? adeudo.nombre : 'Usuario #' + adeudo.usuario_id }}
+                                </strong> <br>
+                                <span class="text-muted">Casa {{ adeudo.numero_casa }} (ID: {{ adeudo.usuario_id }})</span>
                             </td>
                             <td>
                                 <span class="badge bg-primary">{{ adeudo.periodo_cubierto }}</span>
@@ -78,7 +80,7 @@
                                 <span class="badge" [ngClass]="{
                                     'bg-success': adeudo.estado === 'confirmado',
                                     'bg-warning text-dark': adeudo.estado === 'pendiente'
-                                }">{{ adeudo.estado | titlecase }}</span>
+                                }">{{ adeudo.estado | uppercase }}</span>
                             </td>
                             <td>
                                 <span class="badge bg-secondary">{{ adeudo.pasarela_pago?.nombre | titlecase }}</span>

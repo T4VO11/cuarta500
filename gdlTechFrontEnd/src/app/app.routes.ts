@@ -63,8 +63,10 @@ import { UsuariosEditComponent } from './usuarios/edit/edit';
 import { ShowUsuarioComponent } from './usuarios/show/show';
 
 //Rutas para los pagos
-import { ExitoComponent } from './reservaciones/exito/exito';
+import { ExitoComponent as ExitoReservasComponent} from './reservaciones/exito/exito';
 import { CanceladoComponent } from './reservaciones/cancelado/cancelado';
+
+import { ExitoComponent as ExitoAdeudosComponent} from './listadoAdeudos/exito/exito';
 
 
 export const routes: Routes = [
@@ -144,8 +146,15 @@ export const routes: Routes = [
       {
          path: 'listadoAdeudos',
          canActivate: [roleGuard],
-         data: { roles: ['administrador'] }, // Admin gestiona, Residente ve el suyo en 'mi-perfil' o ruta aparte
-         component: ListadoAdeudosIndexComponent
+         data: { roles: ['administrador', 'dueño'] }, // Admin gestiona, Residente ve el suyo en 'mi-perfil' o ruta aparte
+         children: [
+            { path: 'exito', component: ExitoAdeudosComponent },
+
+            { path: '', component: ListadoAdeudosIndexComponent },
+            { path: 'create', component: ListadoAdeudosCreateComponent },
+            { path: ':id/edit', component: ListadoAdeudosEditComponent },
+            { path: ':id', component: ListadoAdeudosShowComponent }
+         ]
          // ... agrega tus hijos create/edit aquí si es necesario
       },
 
@@ -177,7 +186,7 @@ export const routes: Routes = [
        path: 'reporteFinanzas',
        // AQUÍ AGREGAMOS TU SEGURIDAD (HEAD)
        canActivate: [roleGuard],
-       data: { roles: ['administrador'] }, 
+       data: { roles: ['administrador', 'dueño'] }, 
        // AQUÍ CONSERVAMOS LA ESTRUCTURA DE TUS AMIGOS (dev)
        children: [
           // RUTAS ESTÁTICAS PRIMERO (Corrección de tus amigos)
@@ -226,7 +235,7 @@ export const routes: Routes = [
          canActivate: [roleGuard],
          data: { roles: ['administrador', 'dueño'] },
          children: [
-             { path: 'exito', component: ExitoComponent },
+             { path: 'exito', component: ExitoReservasComponent },
              { path: 'cancelado', component: CanceladoComponent },
 
              { path: '', component: ReservacionesIndexComponent }, 

@@ -25,4 +25,9 @@ export class AdeudoService {
     // POST /listadoAdeudos
     return this.http.post(this.apiUrl, pagoData);
   }
+
+  iniciarPagoMantenimiento(data: any): Observable<any> {
+    // Asegúrate de apuntar a tu nueva ruta
+    return this.http.post(`${this.apiUrl}/crear-pago-mantenimiento`, data);
+}
 }

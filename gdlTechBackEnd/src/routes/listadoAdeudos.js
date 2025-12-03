@@ -18,5 +18,9 @@ router.post('/', authMiddleware, requireAdmin, validarListadoAdeudo, listadoAdeu
 router.put('/:id', authMiddleware, requireAdmin, validarListadoAdeudo, listadoAdeudosController.update);
 router.delete('/:id', authMiddleware, requireAdmin, listadoAdeudosController.destroy);
 
+//rutas de pagos con stripe
+router.post('/crear-pago-mantenimiento', listadoAdeudosController.crearSesionMantenimiento);
+router.post('/confirmar-pago-mantenimiento', listadoAdeudosController.confirmarPagoMantenimiento);
+
 module.exports = router;
 
