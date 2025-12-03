@@ -134,9 +134,9 @@ exports.update = async (req, res) => {
         } = req.body;
 
         const data = {};
-        if (nombre) data.nombre = nombre;
+        if (nombre !== undefined) data.nombre = nombre;
         if (descripcion !== undefined) data.descripcion = descripcion;
-        if (estado) data.estado = estado;
+        if (estado !== undefined) data.estado = estado;
 
         // dualWrite
         const updated = await usuarioDW.update(categoria._id, data);

@@ -149,7 +149,7 @@ exports.update = async (req, res) => {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        // Obtenemos el documento local para manejar merge de galeria
+        // Obtenemos el documento local para manejar merges
         const bitacora = await LocalBitacora.findById(id);
         if (!bitacora) {
             return JsonResponse.notFound(res, 'Bitácora no encontrada');
@@ -174,36 +174,48 @@ exports.update = async (req, res) => {
             bitacora.detalle_acceso.imagen_ine_url = `uploads/bitacoras/${req.file.filename}`;
         }
 
-        if (detalle_acceso) {
+        if (detalle_acceso !== undefined) {
             try {
-                detalleAcceso = { ...detalleAcceso, ...(typeof detalle_acceso === 'string' ? JSON.parse(detalle_acceso) : detalle_acceso) };
+                const parsed = typeof detalle_acceso === "string" ? JSON.parse(detalle_acceso) : detalle_acceso;
+                    detalleAcceso = {...detalleAcceso, ...parsed };
+            }catch {detalleAcceso = { ...detalleAcceso, ...detalle_acceso };
+        }
+    }
+
+
+        // Manejo de Vehículo según tipo_registro
+        let vehiculoData = bitacora.vehiculo || {};
+
+        if (vehiculo !== undefined) {
+            try {
+                const parsedV = typeof vehiculo === "string" ? JSON.parse(vehiculo) : vehiculo;
+                // Si es visita NO esperada -> vehiculo se guarda dentro de detalle_acceso
+                if (tipo_registro === "visita_no_esperada") {
+                    detalleAcceso.vehiculo = {
+                        ...(detalleAcceso.vehiculo || {}),
+                        ...parsedV
+                    };
+                }
             } catch {
-                detalleAcceso = { ...detalleAcceso, ...detalle_acceso };
+                // Fallback
+                vehiculoData = {
+                    ...vehiculoData,
+                    ...vehiculo
+                };
             }
         }
+        
+        // Creamos objeto plano updates
+        const updates = {};
 
-        // Vehículo según tipo_registro
-        let vehiculoData = actual.vehiculo || {};
+        if (tipo_registro !== undefined) updates.tipo_registro = tipo_registro;
+        if (fecha_hora !== undefined) updates.fecha_hora = fecha_hora;
+        if (accion !== undefined) updates.accion = accion;
+        if (usuario_id !== undefined) updates.usuario_id = usuario_id;
+        if (invitacion_id !== undefined) updates.invitacion_id = invitacion_id;
 
-        if (tipo_registro === 'visita_no_esperada' && vehiculo) {
-            const v = typeof vehiculo === 'string' ? JSON.parse(vehiculo) : vehiculo;
-            detalleAcceso.vehiculo = { ...detalleAcceso.vehiculo, ...v };
-        } else if (vehiculo) {
-            const v = typeof vehiculo === 'string' ? JSON.parse(vehiculo) : vehiculo;
-            vehiculoData = { ...vehiculoData, ...v };
-        }
-
-
-        // Merge fields
-        const updates ={
-            tipo_registro,
-            fecha_hora,
-            accion,
-            usuario_id,
-            invitacion_id,
-            detalle_acceso: detalleAcceso,
-            vehiculo: vehiculoData
-        };
+        updates.detalle_acceso = detalleAcceso;
+        updates.vehiculo = vehiculoData;
 
         //dualWrite
         const updated = await bitacoraDW.update(id, updates);
