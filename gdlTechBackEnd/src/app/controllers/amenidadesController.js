@@ -153,7 +153,6 @@ exports.update = async (req, res) => {
             transaccion_detalle
         } = req.body;
 
-<<<<<<< HEAD
         // Preparamos updates para actualizar con dualWrite
         const updates = {};
         
@@ -200,85 +199,16 @@ exports.update = async (req, res) => {
             updates.reglas_apartado.galeria_urls = [
                 ...(amenidad.reglas_apartado?.galeria_urls || []),
                 ...nuevasUrls
-=======
-        // Manejar archivos: concatenar galería existente + nuevas
-       let mergedReglas = { ...(amenidad.reglas_apartado || {})};
-
-       if (req.files && req.files.length > 0) {
-        const nuevasUrls = req.files.map(file => `uploads/amenidades/${file.filename}`);
-
-        mergedReglas.galeria_urls = [
-            ...(amenidad.reglas_apartado?.galeria_urls || []),
-            ...nuevasUrls
->>>>>>> 0bd8a07 (Actualizacion de todos los controladores con DualWrite funcional.)
             ];
         }
 
         // Usar dualWriter.update -> actualiza el local y encola/actualiza Atlas si falla
         const updated = await amenidadDW.update(req.params.id, updates);
 
-<<<<<<< HEAD
         const amenidadObj = updated.toObject();
         if (amenidadObj.reglas_apartado?.galeria_urls) {
             amenidadObj.reglas_apartado.galeria_urls = buildImageUrls(req, amenidadObj.reglas_apartado.galeria_urls);
         }
-=======
-    // Armado de updates para dualWrite
-    const updates = {};
-    updates.condominio_id = 'C500';
-    if (tipo !== undefined) updates.tipo = tipo;
-    if (nombre !== undefined) updates.nombre = nombre;
-    if (descripcion !== undefined) updates.descripcion = descripcion;
-    if (estado !== undefined) updates.estado = estado;
-    if (motivo !== undefined) updates.motivo = motivo;
-    if (espacio_ref_id !== undefined) updates.espacio_ref_id = espacio_ref_id;
-    if (usuario_id !== undefined) updates.usuario_id = usuario_id;
-
-    // catalogo_detalle (a objeto)
-    if (catalogo_detalle !== undefined) {
-      try {
-        const parsed = typeof catalogo_detalle === 'string' ? JSON.parse(catalogo_detalle) : catalogo_detalle;
-        updates.catalogo_detalle = { ...(amenidad.catalogo_detalle || {}), ...parsed };
-      } catch {
-        updates.catalogo_detalle = { ...(amenidad.catalogo_detalle || {}), ...catalogo_detalle };
-      }
-    }
-    
-    // reglas_apartado (objeto + galeria)
-    if (reglas_apartado !== undefined || mergedReglas.galeria_urls) {
-        
-        let reglasBody = {};
-        
-        if (reglas_apartado !== undefined) {
-            try {
-                reglasBody = typeof reglas_apartado === "string" ? JSON.parse(reglas_apartado) : reglas_apartado;
-            } catch {
-                reglasBody = reglas_apartado;
-            }
-    }
-
-      updates.reglas_apartado = { ...(amenidad.reglas_apartado || {}), ...reglasBody, ...mergedReglas};
-    }
-
-    // transaccion_detalle (objeto)
-    if (transaccion_detalle !== undefined) {
-      try {
-        const parsedT = typeof transaccion_detalle === 'string' ? JSON.parse(transaccion_detalle) : transaccion_detalle;
-        updates.transaccion_detalle = { ...(amenidad.transaccion_detalle || {}), ...parsedT };
-      } catch {
-        updates.transaccion_detalle = { ...(amenidad.transaccion_detalle || {}), ...transaccion_detalle };
-      }
-    }
-
-    // Usar dualWriter.update -> actualiza el local y encola/actualiza Atlas si falla
-    const updated = await amenidadDW.update(req.params.id, updates);
-
-    const amenidadObj = updated.toObject();
-    if (amenidadObj.reglas_apartado?.galeria_urls) {
-      amenidadObj.reglas_apartado.galeria_urls = buildImageUrls(req, amenidadObj.reglas_apartado.galeria_urls);
-    }
-    
->>>>>>> 0bd8a07 (Actualizacion de todos los controladores con DualWrite funcional.)
     return JsonResponse.success(res, amenidadObj, 'Amenidad actualizada exitosamente');
   } catch (error) {
     console.error('Error en update amenidad:', error);
