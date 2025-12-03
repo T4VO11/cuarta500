@@ -1,11 +1,17 @@
-const Incidente = require('../../models/Incidente');
+const LocalIncidente = require('../../models-local/Incidente');
+const AtlasIncidente = require('../../models/atlas/Incidente');
+
 const JsonResponse = require('../../utils/JsonResponse');
 const Encryption = require('../../utils/encryption');
 const mongoose = require('mongoose');
 
+const createDualWriter = require('../../utils/dualWriter');
+const incidenteDW = createDualWriter(LocalIncidente, AtlasIncidente);
+
+// READS con Local (+ Rapido y offline)
 exports.index = async (req, res) => {
     try {
-        const incidentes = await Incidente.find({ condominio_id: 'C500' })
+        const incidentes = await LocalIncidente.find({ condominio_id: 'C500' })
             .sort({ incidente_id: -1 });
 
         // if (req.query.encrypt === 'true') {
@@ -31,7 +37,7 @@ exports.show = async (req, res) => {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const incidente = await Incidente.findById(req.params.id);
+        const incidente = await LocalIncidente.findById(req.params.id);
 
         if (!incidente) {
             return JsonResponse.notFound(res, 'Incidente no encontrado');
@@ -54,6 +60,7 @@ exports.show = async (req, res) => {
     }
 };
 
+// ---------- STORE (con dualWrite) ----------
 exports.store = async (req, res) => {
     try {
         const {
@@ -68,12 +75,13 @@ exports.store = async (req, res) => {
             usuario_id
         } = req.body;
 
-        const incidenteExistente = await Incidente.findOne({ incidente_id });
+        // Verificamos que no exista el Id unico
+        const incidenteExistente = await LocalIncidente.findOne({ incidente_id });
         if (incidenteExistente) {
             return JsonResponse.error(res, 'El incidente_id ya existe', 400);
         }
 
-        const nuevoIncidente = new Incidente({
+        const payload = {
             incidente_id,
             condominio_id: 'C500',
             asunto,
@@ -84,11 +92,13 @@ exports.store = async (req, res) => {
             descripcion,
             estado: estado || 'abierto',
             usuario_id
-        });
+        };
 
-        await nuevoIncidente.save();
+        //Usar dualWriter para crear en local e intentar en Atlas (Si falla, encola el registro)
+        const nuevoIncidenteLocal = await incidenteDW.create(payload);
+        const incidenteObj = nuevoIncidenteLocal.toObject();
 
-        return JsonResponse.success(res, nuevoIncidente, 'Incidente creado exitosamente', 201);
+        return JsonResponse.success(res, incidenteObj, 'Incidente creado exitosamente', 201);
     } catch (error) {
         console.error('Error en store incidente:', error);
         if (error.code === 11000) {
@@ -98,13 +108,14 @@ exports.store = async (req, res) => {
     }
 };
 
+// ---------- UPDATE (con dualWrite) ----------
 exports.update = async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return JsonResponse.error(res, 'ID inválido', 400);
         }
 
-        const incidente = await Incidente.findById(req.params.id);
+        const incidente = await LocalIncidente.findById(req.params.id);
         if (!incidente) {
             return JsonResponse.notFound(res, 'Incidente no encontrado');
         }
@@ -119,16 +130,19 @@ exports.update = async (req, res) => {
             estado
         } = req.body;
 
-        if (asunto) incidente.asunto = asunto;
-        if (numeroCasa !== undefined) incidente.numeroCasa = numeroCasa;
-        if (fecha_reporte) incidente.fecha_reporte = fecha_reporte;
-        if (fecha_ultima_actualizacion) incidente.fecha_ultima_actualizacion = fecha_ultima_actualizacion;
-        else incidente.fecha_ultima_actualizacion = new Date().toISOString();
-        if (categoria) incidente.categoria = categoria;
-        if (descripcion) incidente.descripcion = descripcion;
-        if (estado) incidente.estado = estado;
+        const updates = {};
+        if (asunto !== undefined) updates.asunto = asunto;
+        if (numeroCasa !== undefined) updates.numeroCasa = numeroCasa;
+        if (fecha_reporte !== undefined) updates.fecha_reporte = fecha_reporte;
+        if (fecha_ultima_actualizacion) updates.fecha_ultima_actualizacion = fecha_ultima_actualizacion;
+        else updates.fecha_ultima_actualizacion = new Date().toISOString();
+        if (categoria !== undefined) updates.categoria = categoria;
+        if (descripcion !== undefined) updates.descripcion = descripcion;
+        if (estado !== undefined) updates.estado = estado;
 
-        await incidente.save();
+        const updated = await incidenteDW.update(req.params.id, updates);
+
+        const incidenteObj = updated.toObject();
 
         // if (req.query.encrypt === 'true') {
         //     const responseData = {
@@ -140,7 +154,7 @@ exports.update = async (req, res) => {
         //     return res.json(encryptedResponse);
         // }
 
-        return JsonResponse.success(res, incidente, 'Incidente actualizado exitosamente');
+        return JsonResponse.success(res, incidenteObj, 'Incidente actualizado exitosamente');
     } catch (error) {
         console.error('Error en update incidente:', error);
         return JsonResponse.error(res, 'Error al actualizar incidente', 500);
@@ -158,7 +172,8 @@ exports.destroy = async (req, res) => {
             return JsonResponse.notFound(res, 'Incidente no encontrado');
         }
 
-        await Incidente.findByIdAndDelete(req.params.id);
+        // eliminamos con dualWrite 
+        await incidenteDW.delete(req.params.id);
 
         return JsonResponse.success(res, null, 'Incidente eliminado exitosamente');
     } catch (error) {
