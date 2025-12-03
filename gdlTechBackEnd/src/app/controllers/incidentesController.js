@@ -1,4 +1,4 @@
-const LocalIncidente = require('../../models-local/Incidente');
+const LocalIncidente = require('../../models/local/Incidente');
 const AtlasIncidente = require('../../models/atlas/Incidente');
 
 const JsonResponse = require('../../utils/JsonResponse');

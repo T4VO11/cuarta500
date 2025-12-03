@@ -167,7 +167,7 @@ exports.update = async (req, res) => {
         
         // Merge de catalogo_detalle (Mantiene lo existente y agrega lo nuevo)
         if (catalogo_detalle !== undefined) {
-            let parsedDed = {};
+            let parsedDet = {};
             try {
                 parseDet = typeof catalogo_detalle === 'string' ? JSON.parse(catalogo_detalle) : catalogo_detalle;
             } catch (e) { parsedDet = catalogo_detalle; }
