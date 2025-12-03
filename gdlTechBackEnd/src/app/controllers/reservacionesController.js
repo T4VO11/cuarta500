@@ -1,6 +1,7 @@
 const LocalReservacion = require('../../models/local/Reservacion');
 const AtlasReservacion = require('../../models/atlas/Reservacion');
 const LocalUsuario = require('../../models/local/Usuario')
+const LocalAmenidad = require('../../models/local/Amenidad');
 
 const JsonResponse = require('../../utils/JsonResponse');
 const Encryption = require('../../utils/encryption');
@@ -466,7 +467,7 @@ exports.crearSesionPago = async (req, res) => {
         }
 
         // 2. BUSCAMOS LA AMENIDAD EN LA BD (Fuente de verdad de precios)
-        const amenidad = await Amenidad.findOne({ amenidad_id: amenidadId });
+        const amenidad = await LocalAmenidad.findOne({ amenidad_id: amenidadId });
         // O si usas _id de mongo: const amenidad = await Amenidad.findById(amenidadId);
 
         if (!amenidad) {
@@ -570,7 +571,7 @@ exports.confirmarPago = async (req, res) => {
 
             if (reservacionId) {
                 // 3. ACTUALIZAR LA BASE DE DATOS
-                const reservacionActualizada = await Reservacion.findByIdAndUpdate(
+                const reservacionActualizada = await LocalReservacion.findByIdAndUpdate(
                     reservacionId,
                     { 
                         estado_pago: 'pagado',

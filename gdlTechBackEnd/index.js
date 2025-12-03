@@ -4,6 +4,7 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const app = express();
+const loadAtlasModels = require('./src/config/loadAtlasModels');
 
 //Imports de configuracion
 const connectDB = require('./src/config/mongoose'); 
@@ -18,21 +19,28 @@ const decryptionRequest = require('./src/middleware/decryptionRequest');
 
 //Conexion a Base de Datos
 connectDB()
-  .then(() => console.log("🔗 MongoDB conectado (modo online OK)."))
+  .then(() => {
+    console.log("🔗 MongoDB conectado (modo online OK).");
+  })
   .catch(() => {
-    console.warn("⚠️  MongoDB no disponible, el servidor seguirá en modo offline.");
+    console.warn("⚠️  MongoDB no disponible, el servidor seguirá en modo offline.");
+  }).finally(() => {
+    loadAtlasModels();
   });
-
+  
 //Arranque de sincronizadores
 (async () => {
-    console.log("Esperando 1.5s para estabilidad de conexiones")
-    await new Promise(r => setTimeout(r, 1500));
+    console.log("Esperando 2s para estabilidad de conexiones")
+    await new Promise(r => setTimeout(r, 2000));
     
-    console.log("Ejecutando initialSync")
-    initialSync()
-    .then(() => console.log("initialSync completado"))
-    .catch(err => console.error('initialSync fallo: ', err));
-
+    console.log("Ejecutando initialSync");
+    try {
+        // Await para que el worker no inicie hasta que termine el initialSync
+        await initialSync();
+        console.log("initialSync completado");
+    } catch (error) {
+        console.error('initialSync fallo: ', err);
+    }
     console.log("Iniciando syncWorker (sincronizacion continua...");
     startSyncWorker();
 })();

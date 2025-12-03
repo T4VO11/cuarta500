@@ -59,6 +59,11 @@ const AmenidadSchema = new Schema({
             type: Number, 
             default: 0 
         },
+        extras_disponibles: [{
+            nombre: { type: String, required: true },
+            costo: { type: Number, required: true },
+            descripcion: String // Opcional
+        }],
         horario_maximo_horas: { 
             type: Number, 
             default: 0 

@@ -21,7 +21,7 @@ module.exports = function createDualWriter (localModel, atlasModel) {
 
         async update (id, data) {
             const localDoc = await localModel.findByIdAndUpdate(id, data, {new: true, upsert: false});
-            const _id = mongoose.Types.ObjectId(id);
+            const _id = new mongoose.Types.ObjectId(id);
 
             try {
                 await atlasModel.findByIdAndUpdate(_id, data);
@@ -38,7 +38,7 @@ module.exports = function createDualWriter (localModel, atlasModel) {
 
         async delete(id) { 
             const localDoc = await localModel.findByIdAndDelete(id);
-            const _id = mongoose.Types.ObjectId(id);
+            const _id = new mongoose.Types.ObjectId(id);
 
             try {
                 await atlasModel.findByIdAndDelete(_id);

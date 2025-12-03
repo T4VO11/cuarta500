@@ -1,5 +1,6 @@
 // models/sync/PendingOperation.js
 const mongoose = require('mongoose');
+const localConn = require('../../config/localConnection');
 
 const PendingOperationSchema = new mongoose.Schema(
   {
@@ -49,8 +50,9 @@ const PendingOperationSchema = new mongoose.Schema(
     }
   },
   {
-    timestamps: true // createdAt, updatedAt
+    timestamps: true, // createdAt, updatedAt
+    versionKey: false,
   }
 );
 
-module.exports = mongoose.model('PendingOperation', PendingOperationSchema, 'pending_operations');
+module.exports = localConn.model('PendingOperation', PendingOperationSchema, 'pending_operations');

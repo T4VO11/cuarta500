@@ -9,22 +9,32 @@ const MAX_MODEL_ERRORS = 5; // Si un modelo no existe despues de 5 intentos, se 
 async function ensureAtlasReady() {
   if (atlasConn.readyState === 1) return true;
 
-  if (typeof atlasConn.asPromise === 'function') {
-    try {
-      await atlasConn.asPromise();
-      return true;
-    } catch {
-      return false;
-    }
+  try {
+     // Forzar a Mongoose a abrir la conexión si estaba cerrada/suspendida
+     await atlasConn.openUri(process.env.MONGODB_URI); 
+    //  // O simplemente invocar una operación ligera:
+    //  await atlasConn.db.admin().ping();
+     return true;
+  } catch (e) {
+     return false;
   }
 
-  // fallback: intentar ping al admin DB
-  try {
-    await atlasConn.db.admin().ping();
-    return true;
-  } catch {
-    return false;
-  }
+  // if (typeof atlasConn.asPromise === 'function') {
+  //   try {
+  //     await atlasConn.asPromise();
+  //     return true;
+  //   } catch {
+  //     return false;
+  //   }
+  // }
+
+  // // fallback: intentar ping al admin DB
+  // try {
+  //   await atlasConn.db.admin().ping();
+  //   return true;
+  // } catch {
+  //   return false;
+  // }
 }
 
 //Procesamos todas las operaciones pendientes guardadas en local.
@@ -66,6 +76,7 @@ async function processPendingOperations() {
 
       // 2. Ejecutamos segun el tipo de operacion
       if (op.operation === 'create') {
+        console.log(`Intentando crear en Atlas: ${op.model}, ID: ${op.payload._id}`);
         await Model.findOneAndUpdate(
           {_id: op.payload._id},
           op.payload,

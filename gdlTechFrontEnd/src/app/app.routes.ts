@@ -180,7 +180,6 @@ export const routes: Routes = [
       // -----------------------------------------------------------
       // 4. MÓDULOS SOCIALES (ADMIN + RESIDENTE)
       // -----------------------------------------------------------
-<<<<<<< HEAD
         
       // reporteFinanzas
     { 
@@ -201,8 +200,6 @@ export const routes: Routes = [
           { path: '', component: ReporteFinanzasIndexComponent },
        ]
     },
-=======
->>>>>>> 7fd4f54 (El sistema ya detecta que rol esta iniciando sesion mediante jwt decode y redirige a la vista que le corresponde a cada rol pero falta afinar permisos y vulnerabilidades en rutas)
 
       // AMENIDADES: Residentes reservan
       { 
@@ -240,9 +237,7 @@ export const routes: Routes = [
          children: [
              { path: 'exito', component: ExitoReservasComponent },
              { path: 'cancelado', component: CanceladoComponent },
-
-=======
->>>>>>> 7fd4f54 (El sistema ya detecta que rol esta iniciando sesion mediante jwt decode y redirige a la vista que le corresponde a cada rol pero falta afinar permisos y vulnerabilidades en rutas)
+             
              { path: '', component: ReservacionesIndexComponent }, 
              { path: 'create', component: CreateComponent }, // Ojo con la importación de CreateComponent aquí
              { path: 'edit/:id', component: ReservacionesEditComponent }, 
@@ -270,7 +265,6 @@ export const routes: Routes = [
 
       // REGLAMENTOS: Todos deben poder leerlos
       { 
-<<<<<<< HEAD
             path: 'reglamentos', 
             redirectTo: 'reglamentos/6910f476625ce8db61ec8f57', // ID de ejemplo del reglamento activo
             pathMatch: 'full' 
@@ -278,18 +272,6 @@ export const routes: Routes = [
         { path: 'reglamentos/create', component: ReglamentosCreateComponent }, 
         { path: 'reglamentos/:id/edit', component: ReglamentosEditComponent }, 
         { path: 'reglamentos/:id', component: ReglamentosShowComponent },
-=======
-         path: 'reglamentos',
-         canActivate: [roleGuard],
-         data: { roles: ['administrador', 'guardia', 'dueño'] },
-         children: [
-             { path: '', redirectTo: 'show/6910f476625ce8db61ec8f57', pathMatch: 'full' }, // Ajusté ruta
-             { path: 'create', component: ReglamentosCreateComponent }, // Idealmente restringir create a Admin
-             { path: ':id/edit', component: ReglamentosEditComponent }, 
-             { path: ':id', component: ReglamentosShowComponent }
-         ]
-      },
->>>>>>> 7fd4f54 (El sistema ya detecta que rol esta iniciando sesion mediante jwt decode y redirige a la vista que le corresponde a cada rol pero falta afinar permisos y vulnerabilidades en rutas)
       
       // Ruta por defecto interna (si alguien pone solo /main)
       {path: '', component: DashboardRedirectComponent, pathMatch: 'full' }
