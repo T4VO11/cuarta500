@@ -26,9 +26,117 @@ class PagosVista:
             Homevista(self.page, self.controlador.api_client)
 
         def realizar_pago(e):
-            """Abre la pantalla para realizar pago"""
-            print("Realizar pago")
-            # TODO: Implementar pantalla de pago
+            """Inicia el proceso de pago con Stripe"""
+            try:
+                # Obtener datos del usuario
+                token, usuario_data = TokenStorage.get_token()
+                if not token:
+                    mostrar_mensaje("No estás autenticado. Por favor inicia sesión.", "error")
+                    return
+                
+                # Obtener usuario_id del token
+                usuario_id = None
+                nombre_usuario = "Usuario"
+                numero_casa = ""
+                
+                try:
+                    import base64
+                    import json
+                    parts = token.split('.')
+                    if len(parts) >= 2:
+                        payload = parts[1]
+                        payload += '=' * (4 - len(payload) % 4)
+                        decoded = base64.urlsafe_b64decode(payload)
+                        token_data = json.loads(decoded)
+                        usuario_info = token_data.get('usuario', {})
+                        usuario_id = usuario_info.get('usuario_id')
+                except Exception as ex:
+                    print(f"Error al decodificar token: {ex}")
+                
+                # Obtener datos del perfil si es necesario
+                if self.controlador.api_client:
+                    try:
+                        exito, perfil, mensaje = self.controlador.api_client.obtener_mi_perfil()
+                        if exito and perfil:
+                            nombre = perfil.get('nombre', '')
+                            apellido_paterno = perfil.get('apellido_paterno', '')
+                            apellido_materno = perfil.get('apellido_materno', '')
+                            nombre_usuario = ' '.join([nombre, apellido_paterno, apellido_materno]).strip() or perfil.get('username', 'Usuario')
+                            numero_casa = perfil.get('numero_casa', '')
+                    except Exception as ex:
+                        print(f"Error al obtener perfil: {ex}")
+                
+                if not usuario_id:
+                    mostrar_mensaje("No se pudo obtener el ID del usuario", "error")
+                    return
+                
+                if not nombre_usuario or nombre_usuario == "Usuario":
+                    mostrar_mensaje("No se pudo obtener el nombre del usuario", "error")
+                    return
+                
+                if not numero_casa:
+                    mostrar_mensaje("No se pudo obtener el número de casa. Por favor completa tu perfil.", "error")
+                    return
+                
+                # Calcular periodo (mes y año actual)
+                from datetime import datetime
+                now = datetime.now()
+                periodo_cubierto = f"{now.year}-{now.month:02d}"
+                
+                # Deshabilitar botón
+                btn_realizar_pago.content.disabled = True
+                btn_realizar_pago.content.text = "Procesando..."
+                self.page.update()
+                
+                # Crear sesión de pago Stripe
+                exito, data, mensaje = self.controlador.api_client.crear_sesion_pago_mantenimiento(
+                    nombre=nombre_usuario,
+                    numero_casa=numero_casa,
+                    periodo_cubierto=periodo_cubierto,
+                    usuario_id=usuario_id
+                )
+                
+                if exito and data and data.get('url'):
+                    # Abrir URL de Stripe en el navegador
+                    import webbrowser
+                    stripe_url = data.get('url')
+                    mostrar_mensaje("Redirigiendo a Stripe para completar el pago...", "info")
+                    webbrowser.open(stripe_url)
+                    
+                    # Mostrar mensaje de que debe volver después del pago
+                    mostrar_mensaje("Completa el pago en Stripe y luego regresa a la app", "info")
+                    btn_realizar_pago.content.disabled = False
+                    btn_realizar_pago.content.text = "Realizar Pago"
+                    self.page.update()
+                else:
+                    mostrar_mensaje(f"Error al crear sesión de pago: {mensaje}", "error")
+                    btn_realizar_pago.content.disabled = False
+                    btn_realizar_pago.content.text = "Realizar Pago"
+                    self.page.update()
+                    
+            except Exception as ex:
+                print(f"Error al realizar pago: {ex}")
+                import traceback
+                traceback.print_exc()
+                mostrar_mensaje(f"Error: {str(ex)}", "error")
+                btn_realizar_pago.content.disabled = False
+                btn_realizar_pago.content.text = "Realizar Pago"
+                self.page.update()
+        
+        def mostrar_mensaje(mensaje, tipo="info"):
+            """Muestra un mensaje al usuario"""
+            try:
+                color = "green" if tipo == "exito" else "red" if tipo == "error" else "blue"
+                snackbar = ft.SnackBar(
+                    content=ft.Text(mensaje),
+                    bgcolor=color,
+                    duration=3000
+                )
+                self.page.snack_bar = snackbar
+                snackbar.open = True
+                self.page.update()
+            except Exception as ex:
+                print(f"Error al mostrar mensaje: {str(ex)}")
 
         def on_navigation_change(e):
             """Maneja el cambio de navegación"""

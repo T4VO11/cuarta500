@@ -13,6 +13,10 @@ router.post('/', authMiddleware, requireAdmin, validarInvitarAmigo, invitarAmigo
 router.post('/crear', authMiddleware, validarInvitarAmigo, invitarAmigosController.store);
 router.get('/mis-invitaciones', authMiddleware, invitarAmigosController.misInvitaciones);
 
+// Ruta pública para IoT: validar QR escaneado
+// Esta ruta es pública porque el dispositivo IoT no tiene autenticación de usuario
+router.post('/validar-qr', invitarAmigosController.validarQr);
+
 // Rutas protegidas con autenticaciOn de administrador (con parámetros)
 router.get('/:id', authMiddleware, requireAdmin, invitarAmigosController.show);
 router.put('/:id', authMiddleware, requireAdmin, validarInvitarAmigo, invitarAmigosController.update);

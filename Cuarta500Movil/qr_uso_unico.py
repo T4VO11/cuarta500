@@ -474,7 +474,7 @@ class QRUsoUnicoVista:
                         ], spacing=12),
                         padding=20,
                         margin=ft.margin.symmetric(horizontal=20, vertical=10),
-                        bgcolor="#F5F5DC",
+                        bgcolor="grey50",
                         border_radius=12,
                         border=ft.border.all(1, "grey300"),
                     ),
@@ -740,7 +740,7 @@ class QRUsoUnicoVista:
             ], spacing=12),
             padding=20,
             margin=ft.margin.symmetric(horizontal=20, vertical=10),
-            bgcolor="#F5F5DC",  # Beige claro
+            bgcolor="grey50",
             border_radius=12,
             border=ft.border.all(1, "grey300"),
         )
@@ -782,7 +782,7 @@ class QRUsoUnicoVista:
             ], spacing=12),
             padding=20,
             margin=ft.margin.symmetric(horizontal=20, vertical=10),
-            bgcolor="#F5F5DC",  # Beige claro
+            bgcolor="grey50",
             border_radius=12,
             border=ft.border.all(1, "grey300"),
         )

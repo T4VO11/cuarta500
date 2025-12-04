@@ -13,6 +13,9 @@ router.get('/mis-reservaciones', authMiddleware, reservacionesController.misRese
 // IMPORTANTE: Esta ruta debe ir ANTES de /:id para que no la capture
 router.post('/crear', authMiddleware, reservacionesController.crear);
 
+// Ruta para usuarios normales: cancelar su propia reservación
+router.put('/cancelar/:id', authMiddleware, reservacionesController.cancelarMiReservacion);
+
 // Rutas GET: solo requieren autenticación (usuarios normales pueden ver)
 router.get('/', authMiddleware, reservacionesController.index);
 router.get('/:id', authMiddleware, reservacionesController.show);

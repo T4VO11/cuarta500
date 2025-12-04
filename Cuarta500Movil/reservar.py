@@ -18,7 +18,8 @@ class ReservarVista:
         if api_client:
             self.controlador.api_client = api_client
         self.amenidad = amenidad
-        self.servicios_extra = []  # Lista de servicios extra
+        self.servicios_extra = []  # Lista de servicios extra seleccionados (solo nombres)
+        self.extras_disponibles = amenidad.get('reglas_apartado', {}).get('extras_disponibles', [])  # Extras desde BD
         
         # Obtener datos del usuario
         self.obtener_datos_usuario()
@@ -109,6 +110,21 @@ class ReservarVista:
             self.page.clean()
             AmenidadesVista(self.page, self.controlador.api_client)
 
+        def mostrar_mensaje(mensaje, tipo="info"):
+            """Muestra un mensaje al usuario"""
+            try:
+                color = "green" if tipo == "exito" else "red" if tipo == "error" else "blue"
+                snackbar = ft.SnackBar(
+                    content=ft.Text(mensaje),
+                    bgcolor=color,
+                    duration=3000
+                )
+                self.page.snack_bar = snackbar
+                snackbar.open = True
+                self.page.update()
+            except Exception as ex:
+                print(f"Error al mostrar mensaje: {str(ex)}")
+
         def formatear_fecha(e):
             """Formatea automáticamente la fecha agregando guiones"""
             try:
@@ -141,86 +157,59 @@ class ReservarVista:
             except Exception as ex:
                 print(f"Error al formatear fecha: {str(ex)}")
 
-        def agregar_servicio(e):
-            """Agrega un servicio extra a la lista"""
-            nombre_servicio = servicio_nombre_input.value.strip() if servicio_nombre_input.value else ""
-            costo_servicio = servicio_costo_input.value.strip() if servicio_costo_input.value else ""
-            
-            if not nombre_servicio or not costo_servicio:
-                mostrar_mensaje("Por favor completa el nombre y costo del servicio", "error")
-                return
-            
-            try:
-                costo = float(costo_servicio)
-                if costo < 0:
-                    mostrar_mensaje("El costo debe ser un número positivo", "error")
-                    return
-                
-                # Agregar servicio a la lista
-                nuevo_servicio = {
-                    "nombre": nombre_servicio,
-                    "costo": costo
-                }
-                self.servicios_extra.append(nuevo_servicio)
-                
-                # Limpiar campos
-                servicio_nombre_input.value = ""
-                servicio_costo_input.value = ""
-                
-                # Actualizar lista de servicios y total
+        def toggle_extra(extra_nombre):
+            """Toggle de selección de extra disponible"""
+            def toggle(e):
+                if extra_nombre in self.servicios_extra:
+                    self.servicios_extra.remove(extra_nombre)
+                else:
+                    self.servicios_extra.append(extra_nombre)
                 actualizar_lista_servicios()
                 calcular_total()
                 self.page.update()
-            except ValueError:
-                mostrar_mensaje("El costo debe ser un número válido", "error")
-
-        def eliminar_servicio(servicio_index):
-            """Elimina un servicio de la lista"""
-            def eliminar(e):
-                if 0 <= servicio_index < len(self.servicios_extra):
-                    self.servicios_extra.pop(servicio_index)
-                    actualizar_lista_servicios()
-                    calcular_total()
-                    self.page.update()
-            return eliminar
+            return toggle
 
         def actualizar_lista_servicios():
-            """Actualiza la lista visual de servicios extra"""
+            """Actualiza la lista visual de servicios extra seleccionados"""
             servicios_lista.controls.clear()
             
             if not self.servicios_extra:
                 servicios_lista.controls.append(
                     ft.Text(
-                        "No hay servicios extra agregados",
+                        "No hay servicios extra seleccionados",
                         size=12,
                         color="grey500",
                         italic=True
                     )
                 )
             else:
-                for idx, servicio in enumerate(self.servicios_extra):
+                for extra_nombre in self.servicios_extra:
+                    # Buscar el extra en la lista de disponibles para obtener el costo
+                    extra_info = next((e for e in self.extras_disponibles if e.get('nombre') == extra_nombre), None)
+                    costo = extra_info.get('costo', 0) if extra_info else 0
+                    
                     servicios_lista.controls.append(
                         ft.Container(
                             content=ft.Row([
                                 ft.Column([
                                     ft.Text(
-                                        servicio["nombre"],
+                                        extra_nombre,
                                         size=14,
                                         weight="w500",
                                         color="grey900"
                                     ),
                                     ft.Text(
-                                        f"${servicio['costo']:,.2f}",
+                                        f"${costo:,.2f}",
                                         size=12,
                                         color="grey600"
                                     ),
                                 ], spacing=2, expand=True),
                                 ft.IconButton(
-                                    icon=ft.Icons.DELETE,
+                                    icon=ft.Icons.CLOSE,
                                     icon_color="red600",
                                     icon_size=20,
-                                    on_click=eliminar_servicio(idx),
-                                    tooltip="Eliminar servicio"
+                                    on_click=toggle_extra(extra_nombre),
+                                    tooltip="Quitar servicio"
                                 ),
                             ], spacing=10),
                             padding=10,
@@ -232,8 +221,16 @@ class ReservarVista:
 
         def calcular_total():
             """Calcula el total de la reserva y actualiza el resumen"""
-            precio_base = self.amenidad.get('catalogo_detalle', {}).get('precio', 0)
-            total_servicios = sum(servicio['costo'] for servicio in self.servicios_extra)
+            # Usar costo_apartado de reglas_apartado en lugar de catalogo_detalle.precio
+            precio_base = self.amenidad.get('reglas_apartado', {}).get('costo_apartado', 0)
+            
+            # Calcular total de servicios extra seleccionados
+            total_servicios = 0
+            for extra_nombre in self.servicios_extra:
+                extra_info = next((e for e in self.extras_disponibles if e.get('nombre') == extra_nombre), None)
+                if extra_info:
+                    total_servicios += extra_info.get('costo', 0)
+            
             total = precio_base + total_servicios
             
             total_text.value = f"${total:,.2f}"
@@ -246,10 +243,14 @@ class ReservarVista:
             """Crea la reserva en el backend"""
             print("Botón crear reserva presionado")
             try:
+                print("Iniciando validación de campos...")
                 # Validar campos
                 if not fecha_input.value or not fecha_input.value.strip():
+                    print("Error: Fecha vacía")
                     mostrar_mensaje("Por favor selecciona la fecha del evento", "error")
                     return
+                
+                print(f"Fecha ingresada: {fecha_input.value}")
                 
                 # Validar formato de fecha
                 fecha_str = fecha_input.value.strip()
@@ -274,11 +275,15 @@ class ReservarVista:
                     mostrar_mensaje(f"Error al procesar la fecha: {str(ex)}", "error")
                     return
 
+                print("Validando autenticación...")
                 # Obtener datos del usuario
                 token, usuario_data = TokenStorage.get_token()
                 if not token:
+                    print("Error: No hay token")
                     mostrar_mensaje("No estás autenticado. Por favor inicia sesión.", "error")
                     return
+                
+                print("Token encontrado, obteniendo datos del usuario...")
 
                 # Asegurar que tenemos los datos del usuario actualizados
                 # Si no tenemos nombre o teléfono, intentar obtenerlos del backend
@@ -314,42 +319,54 @@ class ReservarVista:
                     mostrar_mensaje("No se pudo obtener el teléfono del usuario. Por favor completa tu perfil.", "error")
                     return
 
-                # Calcular total
-                precio_base = self.amenidad.get('catalogo_detalle', {}).get('precio', 0)
-                total_servicios = sum(servicio['costo'] for servicio in self.servicios_extra)
+                print("Calculando total...")
+                # Calcular total y preparar servicios_extra con estructura completa
+                precio_base = self.amenidad.get('reglas_apartado', {}).get('costo_apartado', 0)
+                print(f"Precio base: {precio_base}")
+                total_servicios = 0
+                servicios_extra_completos = []
+                
+                # Convertir lista de nombres a lista de objetos con nombre y costo
+                for extra_nombre in self.servicios_extra:
+                    extra_info = next((e for e in self.extras_disponibles if e.get('nombre') == extra_nombre), None)
+                    if extra_info:
+                        costo = extra_info.get('costo', 0)
+                        total_servicios += costo
+                        servicios_extra_completos.append({
+                            "nombre": extra_nombre,
+                            "costo": costo
+                        })
+                
                 total = precio_base + total_servicios
+                print(f"Total calculado: {total}")
+                print(f"Servicios extra completos: {servicios_extra_completos}")
 
-                # Preparar datos de la reserva (el backend genera reservacion_id automáticamente)
+                # Siempre crear la reserva primero (con estado_pago: "pendiente")
                 reservacion_data = {
                     "nombre_residente": self.nombre_usuario,
                     "telefono": self.telefono_usuario,
                     "fecha_evento": fecha_iso,
-                    "servicios_extra": self.servicios_extra,
+                    "servicios_extra": servicios_extra_completos,  # Enviar con estructura completa
                     "total": total,
                     "estado": "pendiente",
                     "estado_pago": "pendiente"
                 }
-
-                print(f"Datos de reserva a enviar: {reservacion_data}")
-
-                # Deshabilitar botón mientras se procesa
+                
                 btn_crear.disabled = True
                 btn_crear.text = "Creando reserva..."
                 self.page.update()
-
-                # Crear reserva usando el endpoint /reservaciones/crear (para usuarios normales)
+                
+                print("Creando reserva en el backend...")
                 exito, data, mensaje = self.controlador.api_client.crear_reservacion(reservacion_data)
                 
-                print(f"Respuesta del servidor: exito={exito}, mensaje={mensaje}")
-                
                 if exito:
-                    mostrar_mensaje("Reserva creada exitosamente", "exito")
-                    print(f"Reserva creada exitosamente. Datos: {data}")
-                    # Volver a amenidades después de un momento
-                    # La vista de amenidades se recargará automáticamente y cargará las reservas
-                    import threading
-                    threading.Timer(1.5, lambda: volver_amenidades(None)).start()
+                    print(f"Reserva creada exitosamente: {data}")
+                    # Redirigir a la vista del carrito
+                    from carrito_reserva import CarritoReservaVista
+                    self.page.clean()
+                    CarritoReservaVista(self.page, data, self.amenidad, self.controlador.api_client)
                 else:
+                    print(f"Error al crear reserva: {mensaje}")
                     mostrar_mensaje(f"Error al crear reserva: {mensaje}", "error")
                     btn_crear.disabled = False
                     btn_crear.text = "Crear Reserva"
@@ -358,34 +375,34 @@ class ReservarVista:
                 print(f"Error al crear reserva: {str(ex)}")
                 import traceback
                 traceback.print_exc()
-                mostrar_mensaje(f"Error: {str(ex)}", "error")
-                btn_crear.disabled = False
-                btn_crear.text = "Crear Reserva"
-                self.page.update()
-                btn_crear.disabled = False
-                btn_crear.text = "Crear Reserva"
-                self.page.update()
-
-        def mostrar_mensaje(mensaje, tipo="info"):
-            """Muestra un mensaje al usuario"""
-            try:
-                color = "green" if tipo == "exito" else "red" if tipo == "error" else "blue"
-                snackbar = ft.SnackBar(
-                    content=ft.Text(mensaje),
-                    bgcolor=color,
-                    duration=3000
-                )
-                self.page.snack_bar = snackbar
-                snackbar.open = True
-                self.page.update()
-            except Exception as ex:
-                print(f"Error al mostrar mensaje: {str(ex)}")
+                try:
+                    mostrar_mensaje(f"Error: {str(ex)}", "error")
+                except Exception as msg_error:
+                    print(f"Error al mostrar mensaje: {msg_error}")
+                    # Intentar mostrar mensaje de forma alternativa
+                    try:
+                        snackbar = ft.SnackBar(
+                            content=ft.Text(f"Error: {str(ex)}"),
+                            bgcolor="red",
+                            duration=5000
+                        )
+                        self.page.snack_bar = snackbar
+                        snackbar.open = True
+                        self.page.update()
+                    except:
+                        print("No se pudo mostrar ningún mensaje")
+                finally:
+                    btn_crear.disabled = False
+                    btn_crear.text = "Crear Reserva"
+                    self.page.update()
 
         # Obtener datos de la amenidad
         nombre_amenidad = self.amenidad.get('nombre', 'Sin nombre')
         descripcion_amenidad = self.amenidad.get('descripcion', 'Sin descripción')
-        precio_base = self.amenidad.get('catalogo_detalle', {}).get('precio', 0)
+        # Usar costo_apartado de reglas_apartado
+        precio_base = self.amenidad.get('reglas_apartado', {}).get('costo_apartado', 0)
         self.total_calculado = precio_base
+        self.datos_reserva_pendiente = None  # Para guardar datos mientras se procesa el pago
 
         # Header
         header = ft.Container(
@@ -423,10 +440,10 @@ class ReservarVista:
                 ),
                 ft.Divider(),
                 ft.Row([
-                    ft.Text("Precio base:", size=14, color="grey600"),
+                    ft.Text("Costo de apartado:", size=14, color="grey600"),
                     ft.Container(expand=True),
                     ft.Text(
-                        f"${precio_base:,.2f}/hora",
+                        f"${precio_base:,.2f}",
                         size=16,
                         weight="w500",
                         color="grey900"
@@ -489,10 +506,10 @@ class ReservarVista:
             margin=ft.margin.only(bottom=10),
         )
 
-        # Sección de servicios extra
+        # Sección de servicios extra disponibles
         servicios_title = ft.Container(
             content=ft.Text(
-                "Servicios Extra (Opcional)",
+                "Servicios Extra Disponibles",
                 size=16,
                 weight="bold",
                 color="grey900"
@@ -500,42 +517,49 @@ class ReservarVista:
             padding=ft.padding.symmetric(horizontal=20, vertical=10),
         )
 
-        servicio_nombre_input = ft.TextField(
-            label="Nombre del Servicio",
-            hint_text="Ej: Mesa adicional, Sonido, etc.",
-            prefix_icon=ft.Icons.ADD_BUSINESS,
-            border_radius=10,
-            color="black",
-            text_size=14,
-            expand=True,
-        )
-
-        servicio_costo_input = ft.TextField(
-            label="Costo",
-            hint_text="0.00",
-            prefix_icon=ft.Icons.ATTACH_MONEY,
-            border_radius=10,
-            color="black",
-            text_size=14,
-            expand=True,
-            keyboard_type=ft.KeyboardType.NUMBER,
-        )
-
+        # Lista de checkboxes para extras disponibles
+        extras_checkboxes = []
+        if self.extras_disponibles:
+            for extra in self.extras_disponibles:
+                nombre_extra = extra.get('nombre', '')
+                costo_extra = extra.get('costo', 0)
+                descripcion_extra = extra.get('descripcion', '')
+                
+                checkbox = ft.Checkbox(
+                    label=f"{nombre_extra} - ${costo_extra:,.2f}",
+                    value=nombre_extra in self.servicios_extra,
+                    on_change=toggle_extra(nombre_extra),
+                )
+                extras_checkboxes.append(
+                    ft.Container(
+                        content=ft.Column([
+                            checkbox,
+                            ft.Text(
+                                descripcion_extra if descripcion_extra else "Sin descripción",
+                                size=12,
+                                color="grey600",
+                                italic=True
+                            ) if descripcion_extra else None,
+                        ], spacing=2),
+                        padding=10,
+                        margin=ft.margin.only(bottom=5),
+                        bgcolor="grey50",
+                        border_radius=8,
+                    )
+                )
+        
         servicios_input_container = ft.Container(
-            content=ft.Column([
-                ft.Row([
-                    servicio_nombre_input,
-                    servicio_costo_input,
-                ], spacing=10),
-                ft.ElevatedButton(
-                    "Agregar Servicio",
-                    icon=ft.Icons.ADD,
-                    on_click=agregar_servicio,
-                    bgcolor="teal600",
-                    color="white",
-                    expand=True,
-                ),
-            ], spacing=10),
+            content=ft.Column(
+                extras_checkboxes if extras_checkboxes else [
+                    ft.Text(
+                        "No hay servicios extra disponibles",
+                        size=12,
+                        color="grey500",
+                        italic=True
+                    )
+                ],
+                spacing=5
+            ),
             padding=ft.padding.symmetric(horizontal=20),
             margin=ft.margin.only(bottom=10),
         )
@@ -583,7 +607,7 @@ class ReservarVista:
                 ),
                 ft.Divider(),
                 ft.Row([
-                    ft.Text("Precio base:", size=14, color="grey600"),
+                    ft.Text("Costo base:", size=14, color="grey600"),
                     ft.Container(expand=True),
                     ft.Text(f"${precio_base:,.2f}", size=14, color="grey900"),
                 ]),
@@ -639,8 +663,6 @@ class ReservarVista:
         
         # Guardar referencias para actualización
         self.fecha_input = fecha_input
-        self.servicio_nombre_input = servicio_nombre_input
-        self.servicio_costo_input = servicio_costo_input
         self.servicios_lista = servicios_lista
         self.total_text = total_text
         self.btn_crear = btn_crear

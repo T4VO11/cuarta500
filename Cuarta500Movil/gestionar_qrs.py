@@ -1,4 +1,8 @@
 import flet as ft
+import qrcode
+import io
+import json
+import base64
 from datetime import datetime
 from controller import Controlador
 from token_storage import TokenStorage
@@ -69,20 +73,348 @@ class GestionarQRsVista:
             # Estados 'pendiente' y 'confirmado' son activos
             return "activo"
 
+        def generar_qr_desde_invitacion(invitacion):
+            """Genera el código QR desde los datos de la invitación"""
+            try:
+                tipo_qr = invitacion.get('tipo_qr', 'uso_unico')
+                
+                if tipo_qr == 'uso_unico':
+                    # Preparar datos para QR de uso único
+                    qr_data = {
+                        "tipo": "qr_uso_unico",
+                        "invitacion_id": invitacion.get("invitacion_id"),
+                        "nombre_invitado": invitacion.get("nombre_invitado"),
+                        "codigo_acceso": invitacion.get("codigo_acceso"),
+                        "fecha_visita": invitacion.get("fecha_visita"),
+                        "hora_inicio": invitacion.get("hora_inicio", ""),
+                        "hora_fin": invitacion.get("hora_fin", ""),
+                        "numero_casa": invitacion.get("numeroCasa"),
+                        "condominio_id": invitacion.get("condominio_id", "C500"),
+                        "tipo_qr": "uso_unico",
+                        "vehiculo": invitacion.get("vehiculo", {})
+                    }
+                else:
+                    # Preparar datos para QR de usos múltiples
+                    qr_data = {
+                        "tipo": "qr_usos_multiples",
+                        "invitacion_id": invitacion.get("invitacion_id"),
+                        "nombre_invitado": invitacion.get("nombre_invitado"),
+                        "codigo_acceso": invitacion.get("codigo_acceso"),
+                        "fecha_inicio": invitacion.get("fecha_inicio"),
+                        "fecha_fin": invitacion.get("fecha_fin"),
+                        "numero_usos": invitacion.get("numero_usos", 0),
+                        "areas_permitidas": invitacion.get("areas_permitidas", []),
+                        "numero_casa": invitacion.get("numeroCasa"),
+                        "condominio_id": invitacion.get("condominio_id", "C500"),
+                        "tipo_qr": "usos_multiples",
+                        "vehiculo": invitacion.get("vehiculo", {})
+                    }
+
+                # Convertir a JSON string
+                qr_json = json.dumps(qr_data, ensure_ascii=False)
+
+                # Generar QR
+                qr = qrcode.QRCode(
+                    version=1,
+                    error_correction=qrcode.constants.ERROR_CORRECT_L,
+                    box_size=10,
+                    border=4,
+                )
+                qr.add_data(qr_json)
+                qr.make(fit=True)
+
+                # Crear imagen
+                img = qr.make_image(fill_color="black", back_color="white")
+                
+                # Convertir a bytes
+                img_buffer = io.BytesIO()
+                img.save(img_buffer, format='PNG')
+                img_buffer.seek(0)
+                
+                qr_image_bytes = img_buffer.getvalue()
+                img_buffer.close()
+                
+                return qr_image_bytes
+            except Exception as ex:
+                print(f"Error al generar QR: {str(ex)}")
+                import traceback
+                traceback.print_exc()
+                return None
+
+        def descargar_qr_desde_dialogo(qr_image_bytes, invitacion):
+            """Descarga el QR como imagen desde el diálogo"""
+            try:
+                if not qr_image_bytes:
+                    mostrar_mensaje("No hay QR para descargar", "error")
+                    return
+                
+                import os
+                
+                # Crear directorio de descargas si no existe
+                downloads_dir = os.path.join(os.path.expanduser("~"), "Downloads")
+                if not os.path.exists(downloads_dir):
+                    downloads_dir = os.path.expanduser("~")
+                
+                # Nombre del archivo
+                codigo = invitacion.get('codigo_acceso', 'QR')
+                tipo = "SINGLE" if invitacion.get('tipo_qr') == 'uso_unico' else "MULTI"
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"QR_{tipo}_{codigo}_{timestamp}.png"
+                filepath = os.path.join(downloads_dir, filename)
+                
+                # Guardar archivo
+                with open(filepath, 'wb') as f:
+                    f.write(qr_image_bytes)
+                
+                mostrar_mensaje(f"QR descargado en: {filepath}", "exito")
+                
+            except Exception as ex:
+                print(f"Error al descargar QR: {str(ex)}")
+                mostrar_mensaje(f"Error al descargar: {str(ex)}", "error")
+
+        def compartir_qr_whatsapp(qr_image_bytes, invitacion):
+            """Comparte el QR por WhatsApp"""
+            try:
+                nombre_visitante = invitacion.get('nombre_invitado', 'Visitante')
+                codigo = invitacion.get('codigo_acceso', '')
+                tipo_qr = invitacion.get('tipo_qr', 'uso_unico')
+                
+                if tipo_qr == 'uso_unico':
+                    fecha = invitacion.get('fecha_visita', '')
+                    hora_inicio = invitacion.get('hora_inicio', '')
+                    hora_fin = invitacion.get('hora_fin', '')
+                    
+                    mensaje = f"*Código QR de Acceso*\n\n"
+                    mensaje += f"Visitante: {nombre_visitante}\n"
+                    mensaje += f"Código: {codigo}\n"
+                    mensaje += f"Fecha: {fecha}\n"
+                    mensaje += f"Horario: {hora_inicio} - {hora_fin}\n\n"
+                    mensaje += "Escanea este código QR para acceder al condominio."
+                else:
+                    fecha_inicio = invitacion.get('fecha_inicio', '')
+                    fecha_fin = invitacion.get('fecha_fin', '')
+                    numero_usos = invitacion.get('numero_usos', 0)
+                    
+                    mensaje = f"*Código QR de Acceso - Usos Múltiples*\n\n"
+                    mensaje += f"Visitante: {nombre_visitante}\n"
+                    mensaje += f"Código: MULTI-{codigo}\n"
+                    mensaje += f"Válido: {fecha_inicio} al {fecha_fin}\n"
+                    mensaje += f"Número de usos: {numero_usos}\n\n"
+                    mensaje += "Escanea este código QR para acceder al condominio."
+                
+                # En Windows, usar el esquema de URL de WhatsApp
+                import urllib.parse
+                mensaje_encoded = urllib.parse.quote(mensaje)
+                whatsapp_url = f"https://wa.me/?text={mensaje_encoded}"
+                
+                # Intentar abrir WhatsApp
+                self.page.launch_url(whatsapp_url)
+                mostrar_mensaje("Abriendo WhatsApp...", "info")
+                
+            except Exception as ex:
+                print(f"Error al compartir por WhatsApp: {str(ex)}")
+                mostrar_mensaje(f"Error al compartir: {str(ex)}", "error")
+
         def ver_detalles_qr(invitacion):
-            """Muestra los detalles del QR"""
-            # TODO: Implementar vista de detalles con opciones de editar/revocar
-            mostrar_mensaje(f"Detalles de QR: {invitacion.get('nombre_invitado')}. Funcionalidad de detalles próximamente.", "info")
+            """Muestra los detalles del QR con opción de verlo nuevamente"""
+            try:
+                print(f"🔍 ver_detalles_qr llamado para: {invitacion.get('nombre_invitado')}")
+                # Generar QR desde la invitación
+                qr_image_bytes = generar_qr_desde_invitacion(invitacion)
+                print(f"✅ QR generado: {len(qr_image_bytes) if qr_image_bytes else 0} bytes")
+                
+                if not qr_image_bytes:
+                    mostrar_mensaje("Error al generar el QR", "error")
+                    return
+                
+                # Codificar imagen en base64
+                qr_base64 = base64.b64encode(qr_image_bytes).decode('utf-8')
+                
+                # Obtener datos para mostrar
+                nombre_visitante = invitacion.get('nombre_invitado', 'Visitante')
+                codigo = invitacion.get('codigo_acceso', '')
+                tipo_qr = invitacion.get('tipo_qr', 'uso_unico')
+                
+                # Preparar información según tipo
+                if tipo_qr == 'uso_unico':
+                    fecha = invitacion.get('fecha_visita', '')
+                    hora_inicio = invitacion.get('hora_inicio', '')
+                    hora_fin = invitacion.get('hora_fin', '')
+                    validez_texto = f"Válido hasta: {fecha} {hora_fin} hrs"
+                    tipo_texto = "Uso Único"
+                    codigo_display = f"SINGLE-{codigo}"
+                else:
+                    fecha_inicio = invitacion.get('fecha_inicio', '')
+                    fecha_fin = invitacion.get('fecha_fin', '')
+                    numero_usos = invitacion.get('numero_usos', 0)
+                    usos_actuales = invitacion.get('usos_actuales', 0)
+                    
+                    # Formatear fechas
+                    try:
+                        if '-' in fecha_inicio:
+                            partes = fecha_inicio.split('-')
+                            if len(partes) == 3:
+                                fecha_inicio = f"{partes[2]}/{partes[1]}/{partes[0]}"
+                        if '-' in fecha_fin:
+                            partes = fecha_fin.split('-')
+                            if len(partes) == 3:
+                                fecha_fin = f"{partes[2]}/{partes[1]}/{partes[0]}"
+                    except:
+                        pass
+                    
+                    validez_texto = f"Válido: {fecha_inicio} al {fecha_fin}"
+                    tipo_texto = "Usos Múltiples"
+                    codigo_display = f"MULTI-{codigo}"
+                    if numero_usos > 0:
+                        usos_restantes = numero_usos - usos_actuales
+                        validez_texto += f" | Usos: {usos_actuales}/{numero_usos}"
+                
+                # Mostrar QR en contenedor en lugar de diálogo (más confiable en móvil)
+                print(f"🔍 Mostrando QR en contenedor...")
+                
+                # Ocultar lista y mostrar QR
+                self.contenido_container.visible = False
+                self.tabs_container.visible = False
+                self.qr_view_container.visible = True
+                
+                # Crear contenido del QR
+                self.qr_view_container.content = ft.Column([
+                    # Botón volver
+                    ft.Row([
+                        ft.IconButton(
+                            icon=ft.Icons.ARROW_BACK,
+                            on_click=lambda e: self.volver_a_lista(),
+                            tooltip="Volver a la lista"
+                        ),
+                        ft.Text(
+                            "Código QR",
+                            size=24,
+                            weight="bold",
+                            color="grey900",
+                            expand=True
+                        ),
+                    ], spacing=10),
+                    
+                    # QR Code
+                    ft.Container(
+                        content=ft.Image(
+                            src_base64=qr_base64,
+                            width=280,
+                            height=280,
+                        ),
+                        padding=20,
+                        bgcolor="white",
+                        border_radius=12,
+                        border=ft.border.all(2, "grey300"),
+                        margin=ft.margin.symmetric(horizontal=20, vertical=10),
+                        alignment=ft.alignment.center,
+                    ),
+                    
+                    # Información del visitante
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Row([
+                                ft.Column([
+                                    ft.Text("Visitante", size=12, color="grey600"),
+                                    ft.Text(nombre_visitante, size=16, weight="bold", color="grey900"),
+                                ], spacing=4, expand=True),
+                                ft.Column([
+                                    ft.Text("Código", size=12, color="grey600", text_align="right"),
+                                    ft.Text(
+                                        codigo_display,
+                                        size=16,
+                                        weight="bold",
+                                        color="teal600",
+                                        text_align="right"
+                                    ),
+                                ], spacing=4, horizontal_alignment="end"),
+                            ], spacing=10),
+                            ft.Divider(height=1, color="grey300"),
+                            ft.Row([
+                                ft.Icon(ft.Icons.ACCESS_TIME, size=16, color="grey600"),
+                                ft.Text(validez_texto, size=13, color="grey700", expand=True),
+                            ], spacing=8),
+                            ft.Row([
+                                ft.Icon(ft.Icons.LOCK, size=16, color="grey600"),
+                                ft.Text(f"Tipo de Acceso: {tipo_texto}", size=13, color="grey700", expand=True),
+                            ], spacing=8),
+                        ], spacing=12),
+                        padding=20,
+                        margin=ft.margin.symmetric(horizontal=20, vertical=10),
+                        bgcolor="grey50",
+                        border_radius=12,
+                        border=ft.border.all(1, "grey300"),
+                    ),
+                    
+                    # Botones de acción
+                    ft.Container(
+                        content=ft.Column([
+                            ft.ElevatedButton(
+                                "Compartir QR",
+                                icon=ft.Icons.SHARE,
+                                on_click=lambda e: compartir_qr_whatsapp(qr_image_bytes, invitacion),
+                                bgcolor="teal600",
+                                color="white",
+                                expand=True,
+                                height=50,
+                                style=ft.ButtonStyle(
+                                    shape=ft.RoundedRectangleBorder(radius=12)
+                                )
+                            ),
+                            ft.OutlinedButton(
+                                "Descargar QR",
+                                icon=ft.Icons.DOWNLOAD,
+                                on_click=lambda e: descargar_qr_desde_dialogo(qr_image_bytes, invitacion),
+                                expand=True,
+                                height=50,
+                                style=ft.ButtonStyle(
+                                    shape=ft.RoundedRectangleBorder(radius=12)
+                                )
+                            ),
+                        ], spacing=10),
+                        padding=ft.padding.symmetric(horizontal=20, vertical=10),
+                    ),
+                ], spacing=0, scroll="auto", horizontal_alignment="center")
+                
+                print(f"🔍 Actualizando page para mostrar QR...")
+                self.page.update()
+                print(f"✅ QR debería estar visible ahora")
+                
+            except Exception as ex:
+                print(f"Error al mostrar detalles del QR: {str(ex)}")
+                import traceback
+                traceback.print_exc()
+                mostrar_mensaje(f"Error al mostrar QR: {str(ex)}", "error")
+        
+        def cerrar_dialogo_qr(e=None):
+            """Cierra el diálogo del QR"""
+            if self.page.dialog:
+                self.page.dialog.open = False
+                self.page.update()
 
         def crear_card_qr(invitacion, ver_detalles_func):
             """Crea un card para un QR"""
-            nombre_visitante = invitacion.get('nombre_invitado', 'Visitante')
-            tipo_qr = invitacion.get('tipo_qr', 'uso_unico')
-            estado_invitacion = invitacion.get('estado', 'pendiente')
+            # Crear una copia de la invitación para evitar problemas de referencia
+            invitacion_copy = invitacion.copy() if isinstance(invitacion, dict) else invitacion
+            
+            nombre_visitante = invitacion_copy.get('nombre_invitado', 'Visitante')
+            tipo_qr = invitacion_copy.get('tipo_qr', 'uso_unico')
+            estado_invitacion = invitacion_copy.get('estado', 'pendiente')
             
             # Determinar estado real
             ahora = datetime.now()
-            estado_real = determinar_estado_qr(invitacion, ahora)
+            estado_real = determinar_estado_qr(invitacion_copy, ahora)
+            
+            # Crear función de clic que capture correctamente la invitación
+            def hacer_clic(e):
+                print(f"🔍 Click en QR: {nombre_visitante}, ID: {invitacion_copy.get('invitacion_id')}")
+                try:
+                    ver_detalles_func(invitacion_copy)
+                except Exception as ex:
+                    print(f"❌ Error al llamar ver_detalles_func: {str(ex)}")
+                    import traceback
+                    traceback.print_exc()
+                    mostrar_mensaje(f"Error: {str(ex)}", "error")
             
             # Icono según tipo
             if tipo_qr == 'usos_multiples':
@@ -188,10 +520,10 @@ class GestionarQRsVista:
                 spacing=10),
                 padding=20,
                 margin=ft.margin.symmetric(horizontal=20, vertical=5),
-                bgcolor="#F5F5DC",  # Beige claro
+                bgcolor="grey50",
                 border_radius=12,
                 border=ft.border.all(1, "grey300"),
-                on_click=lambda e, inv=invitacion: ver_detalles_func(inv),
+                on_click=hacer_clic,
             )
             
             return card
@@ -220,8 +552,12 @@ class GestionarQRsVista:
             
             return filtradas
 
-        def actualizar_lista_qrs():
+        def actualizar_lista_qrs(recargar_desde_bd=False):
             """Actualiza la lista de QRs según el filtro"""
+            # Recargar invitaciones desde la BD si se solicita
+            if recargar_desde_bd:
+                self.cargar_invitaciones()
+            
             contenido_column.controls.clear()
             
             # Filtrar invitaciones según el filtro
@@ -255,7 +591,7 @@ class GestionarQRsVista:
             # Actualizar estilos de los tabs
             for tab in tabs:
                 if tab.data == filtro:
-                    tab.bgcolor = "#F5F5DC"  # Beige claro
+                    tab.bgcolor = "grey200"
                     tab.content.color = "grey900"
                 else:
                     tab.bgcolor = "white"
@@ -288,6 +624,12 @@ class GestionarQRsVista:
         # Cargar invitaciones
         self.cargar_invitaciones()
 
+        def refrescar_lista(e):
+            """Recarga los QRs desde la base de datos"""
+            mostrar_mensaje("Actualizando lista de QRs...", "info")
+            actualizar_lista_qrs(recargar_desde_bd=True)
+            mostrar_mensaje("Lista actualizada", "exito")
+
         # Header
         header = ft.Container(
             content=ft.Column([
@@ -298,6 +640,12 @@ class GestionarQRsVista:
                         tooltip="Volver"
                     ),
                     ft.Container(expand=True),
+                    ft.IconButton(
+                        icon=ft.Icons.REFRESH,
+                        icon_size=24,
+                        tooltip="Actualizar lista",
+                        on_click=refrescar_lista
+                    ),
                     ft.IconButton(
                         icon=ft.Icons.NOTIFICATIONS_OUTLINED,
                         icon_size=24,
@@ -326,7 +674,7 @@ class GestionarQRsVista:
             content=ft.Text("Todos", size=14, weight="w500", color="grey900"),
             data="todos",
             padding=12,
-            bgcolor="#F5F5DC",
+            bgcolor="grey200",
             border_radius=20,
             on_click=lambda e: cambiar_filtro("todos"),
         )
@@ -368,6 +716,13 @@ class GestionarQRsVista:
 
         # Contenedor de contenido (se actualiza dinámicamente)
         contenido_column = ft.Column([], spacing=10, scroll="auto", expand=True)
+        
+        # Contenedor para mostrar el QR (inicialmente oculto)
+        qr_view_container = ft.Container(
+            content=ft.Column([]),
+            visible=False,
+            padding=20,
+        )
         
         # Inicializar contenido
         actualizar_lista_qrs()
@@ -430,6 +785,7 @@ class GestionarQRsVista:
             header,
             tabs_container,
             contenido_container,
+            qr_view_container,  # Vista del QR (oculta por defecto)
             boton_container,
         ], spacing=0, scroll="auto", expand=True)
         
@@ -446,6 +802,9 @@ class GestionarQRsVista:
         self.tabs = tabs
         self.contenido_column = contenido_column
         self.actualizar_lista_qrs = actualizar_lista_qrs
+        self.contenido_container = contenido_container
+        self.tabs_container = tabs_container
+        self.qr_view_container = qr_view_container
 
     def cargar_invitaciones(self):
         """Carga las invitaciones del usuario desde el backend"""
@@ -468,8 +827,25 @@ class GestionarQRsVista:
             self.invitaciones = []
 
 
+    def volver_a_lista(self):
+        """Vuelve a mostrar la lista de QRs ocultando la vista del QR"""
+        try:
+            self.contenido_container.visible = True
+            self.tabs_container.visible = True
+            self.qr_view_container.visible = False
+            self.page.update()
+            print("✅ Volviendo a la lista de QRs")
+        except Exception as ex:
+            print(f"Error al volver a la lista: {str(ex)}")
+            import traceback
+            traceback.print_exc()
+
     def on_swipe(self, e):
         """Maneja el gesto de swipe horizontal"""
+        # Solo permitir swipe si estamos en la lista, no en la vista del QR
+        if hasattr(self, 'qr_view_container') and self.qr_view_container.visible:
+            return  # No hacer swipe si estamos viendo un QR
+            
         if e.velocity_x > 500:  # Swipe rápido a la derecha
             from amenidades import AmenidadesVista
             self.page.clean()

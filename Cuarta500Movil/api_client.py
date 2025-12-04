@@ -417,6 +417,24 @@ class ApiClient:
         
         return False, None, response.get('mensaje', 'Error al crear reservación')
     
+    def actualizar_reservacion(self, reservacion_id, reservacion_data):
+        """Actualizar reservación - PUT /reservaciones/:id"""
+        response, status_code = self._make_request('PUT', f'/reservaciones/{reservacion_id}', data=reservacion_data)
+        
+        if status_code == 200 and response.get('estado') == 'exito':
+            return True, response.get('data'), response.get('mensaje')
+        
+        return False, None, response.get('mensaje', 'Error al actualizar reservación')
+    
+    def cancelar_reservacion(self, reservacion_id):
+        """Cancelar reservación - PUT /reservaciones/cancelar/:id (para usuarios normales)"""
+        response, status_code = self._make_request('PUT', f'/reservaciones/cancelar/{reservacion_id}', data={})
+        
+        if status_code == 200 and response.get('estado') == 'exito':
+            return True, response.get('data'), response.get('mensaje')
+        
+        return False, None, response.get('mensaje', 'Error al cancelar reservación')
+    
     # ========== BITÁCORAS / HISTORIAL DE ACCESOS ==========
     def obtener_historial_accesos(self, encrypt=False):
         """Obtener historial de accesos del usuario actual - GET /bitacoras/mi-historial"""
@@ -427,6 +445,57 @@ class ApiClient:
             return True, response.get('data', []), response.get('mensaje')
         
         return False, [], response.get('mensaje', 'Error al obtener historial de accesos')
+    
+    # ========== STRIPE - PAGOS DE RESERVACIONES ==========
+    def crear_sesion_pago_reservacion(self, amenidad_id, extras_seleccionados=None, reservacion_id=None):
+        """Crear sesión de pago Stripe para reservación - POST /reservaciones/crear-pago"""
+        data = {
+            "amenidadId": amenidad_id,
+            "extrasSeleccionados": extras_seleccionados or [],
+            "reservacionId": reservacion_id
+        }
+        response, status_code = self._make_request('POST', '/reservaciones/crear-pago', data=data)
+        
+        if status_code == 200 and response.get('estado') == 'exito':
+            return True, response.get('data', {}), response.get('mensaje')
+        
+        return False, None, response.get('mensaje', 'Error al crear sesión de pago')
+    
+    def confirmar_pago_reservacion(self, session_id):
+        """Confirmar pago de reservación - POST /reservaciones/confirmar-pago"""
+        data = {"session_id": session_id}
+        response, status_code = self._make_request('POST', '/reservaciones/confirmar-pago', data=data)
+        
+        if status_code == 200 and response.get('estado') == 'exito':
+            return True, response.get('data', {}), response.get('mensaje')
+        
+        return False, None, response.get('mensaje', 'Error al confirmar pago')
+    
+    # ========== STRIPE - PAGOS DE MANTENIMIENTO ==========
+    def crear_sesion_pago_mantenimiento(self, nombre, numero_casa, periodo_cubierto, usuario_id=None):
+        """Crear sesión de pago Stripe para mantenimiento - POST /listadoAdeudos/crear-pago-mantenimiento"""
+        data = {
+            "nombre": nombre,
+            "numero_casa": numero_casa,
+            "periodo_cubierto": periodo_cubierto,
+            "usuario_id": usuario_id
+        }
+        response, status_code = self._make_request('POST', '/listadoAdeudos/crear-pago-mantenimiento', data=data)
+        
+        if status_code == 200 and response.get('estado') == 'exito':
+            return True, response.get('data', {}), response.get('mensaje')
+        
+        return False, None, response.get('mensaje', 'Error al crear sesión de pago')
+    
+    def confirmar_pago_mantenimiento(self, session_id):
+        """Confirmar pago de mantenimiento - POST /listadoAdeudos/confirmar-pago-mantenimiento"""
+        data = {"session_id": session_id}
+        response, status_code = self._make_request('POST', '/listadoAdeudos/confirmar-pago-mantenimiento', data=data)
+        
+        if status_code == 200 and response.get('estado') == 'exito':
+            return True, response.get('data', {}), response.get('mensaje')
+        
+        return False, None, response.get('mensaje', 'Error al confirmar pago')
 
 
 

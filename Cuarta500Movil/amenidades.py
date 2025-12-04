@@ -606,6 +606,14 @@ class AmenidadesVista:
             )
         )
 
+        # Hacer el card clickeable para abrir el detalle
+        def abrir_detalle(e):
+            from detalle_reserva import DetalleReservaVista
+            # Buscar la amenidad correspondiente (necesitamos obtenerla)
+            # Por ahora, pasamos None y la vista intentará obtenerla
+            self.page.clean()
+            DetalleReservaVista(self.page, reserva, None, self.controlador.api_client)
+        
         card = ft.Container(
             content=ft.Column(contenido_card, spacing=10),
             padding=20,
@@ -613,6 +621,7 @@ class AmenidadesVista:
             bgcolor="white",
             border_radius=12,
             border=ft.border.all(1, "grey300"),
+            on_click=abrir_detalle,
         )
         
         return card

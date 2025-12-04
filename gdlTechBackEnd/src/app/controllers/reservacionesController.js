@@ -457,6 +457,62 @@ exports.misReservaciones = async (req, res) => {
     }  
 };
 
+// Endpoint para usuarios normales: cancelar su propia reservación
+exports.cancelarMiReservacion = async (req, res) => {
+    try {
+        // Obtener usuario_id del token JWT
+        const usuario_id = req.usuario?.usuario_id;
+        if (!usuario_id) {
+            return JsonResponse.error(res, 'Usuario no identificado', 401);
+        }
+
+        const reservacionId = req.params.id;
+        let reservacion;
+
+        // Intentar buscar por ObjectId primero
+        if (mongoose.Types.ObjectId.isValid(reservacionId)) {
+            reservacion = await LocalReservacion.findById(reservacionId);
+        }
+
+        // Si no se encontró por ObjectId, intentar por reservacion_id
+        if (!reservacion) {
+            const reservacionIdNum = parseInt(reservacionId);
+            if (!isNaN(reservacionIdNum)) {
+                reservacion = await LocalReservacion.findOne({ reservacion_id: reservacionIdNum });
+            }
+        }
+
+        // Validar que la reservación exista
+        if (!reservacion) {
+            return JsonResponse.notFound(res, 'Reservación no encontrada');
+        }
+
+        // Validar que la reservación pertenezca al usuario
+        const usuarioIdNum = Number(usuario_id);
+        if (reservacion.usuario_id && Number(reservacion.usuario_id) !== usuarioIdNum) {
+            return JsonResponse.error(res, 'No tienes permiso para cancelar esta reservación', 403);
+        }
+
+        // Validar que la reservación no esté ya cancelada o completada
+        if (reservacion.estado === 'cancelada') {
+            return JsonResponse.error(res, 'La reservación ya está cancelada', 400);
+        }
+
+        if (reservacion.estado === 'completada') {
+            return JsonResponse.error(res, 'No se puede cancelar una reservación completada', 400);
+        }
+
+        // Actualizar estado a cancelada
+        const updates = { estado: 'cancelada' };
+        const updated = await reservacionesDW.update(reservacion._id, updates);
+
+        return JsonResponse.success(res, updated.toObject(), 'Reservación cancelada exitosamente');
+    } catch (error) {
+        console.error('Error en cancelarMiReservacion:', error);
+        return JsonResponse.error(res, 'Error al cancelar reservación', 500);
+    }
+};
+
 exports.crearSesionPago = async (req, res) => {
     try {
         // 1. Recibimos el ID de la amenidad y los nombres de los extras

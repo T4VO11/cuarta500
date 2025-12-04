@@ -69,6 +69,10 @@ const InvitarAmigoSchema = new Schema({
         type: Number,
         default: 0
     },
+    usos_actuales: {
+        type: Number,
+        default: 0
+    },
     areas_permitidas: [{
         type: String
     }],
