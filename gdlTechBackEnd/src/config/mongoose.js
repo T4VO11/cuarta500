@@ -15,10 +15,11 @@ const connectDB = async () => {
     try {
       console.log(`🔁 Intentando conectar con MongoDB Atlas...`);
       await mongoose.connect(MONGODB_URI, {
-        serverSelectionTimeoutMS: 5000 // 5s de tiempo limite para intentar a Atlas
+        serverSelectionTimeoutMS: 15000, // Aumentado a 15 segundos
+        socketTimeoutMS: 45000
       });
       console.log(`✅ MongoDB Atlas conectado exitosamente.`);
-      return;
+      return mongoose.connection;
     } catch (error) {
       console.error(`❌ Error al conectar a Mongo Atlas:`, error.message);
       console.warn(`🔁 Intentando conectar a MongoDB Local...`);
@@ -29,12 +30,17 @@ const connectDB = async () => {
 
     //Fallback garantizado
     try {
-      await mongoose.connect(MONGO_LOCAL);
+      await mongoose.connect(MONGO_LOCAL, {
+        serverSelectionTimeoutMS: 15000,
+        socketTimeoutMS: 45000
+      });
       console.log(`✅ Conectado a MongoDB Local (modo fallback).`);
+      return mongoose.connection;
     } catch (error) {
-      console.error(`❌ Error al conectar a MongoDB local: `, localError.message);
+      console.error(`❌ Error al conectar a MongoDB local: `, error.message);
       console.warn(`⚠️  El servidor continuará sin base de datos. Algunas funciones pueden no funcionar.`);
       // No salir del proceso, permitir que el servidor inicie
+      return null;
     }
 };
 

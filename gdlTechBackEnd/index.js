@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const mongoose = require('mongoose');
 const app = express();
 const loadAtlasModels = require('./src/config/loadAtlasModels');
 
@@ -17,17 +18,83 @@ const startSyncWorker = require('./src/sync/syncWorker');    // Mantiene la sinc
 
 const decryptionRequest = require('./src/middleware/decryptionRequest');
 
+// Variable para rastrear si la DB está lista
+let dbReady = false;
+let dbConnection = null;
+
 //Conexion a Base de Datos
 connectDB()
-  .then(() => {
+  .then((connection) => {
     console.log("🔗 MongoDB conectado (modo online OK).");
+    dbConnection = connection || mongoose.connection;
+    dbReady = true;
+    loadAtlasModels();
   })
-  .catch(() => {
-    console.warn("⚠️  MongoDB no disponible, el servidor seguirá en modo offline.");
-  }).finally(() => {
+  .catch((error) => {
+    console.warn("⚠️  MongoDB no disponible, el servidor seguirá en modo offline.");
+    console.error("Error de conexión:", error.message);
+    // Aún así cargamos los modelos para que el servidor pueda iniciar
     loadAtlasModels();
   });
+
+// Función para esperar conexiones separadas (local y Atlas)
+const waitForSeparateConnections = () => {
+  return new Promise((resolve) => {
+    const checkConnections = () => {
+      const localReady = localConn.readyState === 1;
+      const atlasReady = atlasConn.readyState === 1;
+      
+      if (localReady || atlasReady) {
+        console.log(`✅ Conexiones MongoDB listas - Local: ${localReady}, Atlas: ${atlasReady}`);
+        resolve();
+      } else {
+        // Esperar un poco y volver a verificar
+        setTimeout(checkConnections, 500);
+      }
+    };
+    
+    // Iniciar verificación después de 1 segundo
+    setTimeout(checkConnections, 1000);
+    
+    // Timeout de seguridad: después de 15 segundos, continuar de todas formas
+    setTimeout(() => {
+      console.warn("⚠️ Timeout esperando conexiones separadas, continuando...");
+      resolve();
+    }, 15000);
+  });
+};
+
+// Esperar conexiones separadas en background
+waitForSeparateConnections().then(() => {
+  dbReady = true;
+});
+
+// Middleware para verificar que la DB esté lista antes de procesar peticiones
+const dbReadyMiddleware = (req, res, next) => {
+  // Permitir health check sin DB
+  if (req.path === '/health' || req.path === '/') {
+    return next();
+  }
   
+  // Verificar conexión principal
+  const mainReady = dbConnection && dbConnection.readyState === 1;
+  // Verificar conexiones separadas
+  const localReady = localConn.readyState === 1;
+  const atlasReady = atlasConn.readyState === 1;
+  
+  if (mainReady || localReady || atlasReady) {
+    return next();
+  }
+  
+  // Si no hay conexión, retornar error pero no bloquear
+  console.warn(`⚠️ Petición recibida pero DB no lista: ${req.method} ${req.path}`);
+  return res.status(503).json({
+    estado: 'error',
+    mensaje: 'Base de datos no disponible. Por favor, intenta de nuevo en unos segundos.',
+    data: null
+  });
+};
+
 //Arrancamos el servidor PRIMERO (para que Render detecte que está listo)
 const port = process.env.PORT || 3000;
 const { setDefaultAutoSelectFamilyAttemptTimeout } = require('net');
@@ -91,6 +158,9 @@ app.use((req, res, next) => {
     console.log(`${req.method} ${req.path} - ${new Date().toISOString()}`);
     next();
 });
+
+// Middleware de verificación de DB (antes del descifrado)
+app.use(dbReadyMiddleware);
 
 app.use((req, res, next) => {
     if (req.path.startsWith('/uploads')) {
