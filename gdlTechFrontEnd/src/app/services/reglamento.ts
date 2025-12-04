@@ -1,13 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ReglamentoService {
   // Prefijo de la API (DEBE SER SINGULAR: /reglamento)
-  private apiUrl = 'http://localhost:3000/reglamento'; 
+  private apiUrl = `${environment.apiUrl}/reglamento`; 
   private http = inject(HttpClient);
 
   // 1. OBTENER el reglamento activo (Show)

@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AmenidadService {
-  private apiUrl = 'http://localhost:3000/amenidades'; // Ruta base de Express
+  private apiUrl = `${environment.apiUrl}/amenidades`; // Ruta base de Express
   
   constructor(private http: HttpClient) { }
 

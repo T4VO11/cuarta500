@@ -4,13 +4,14 @@ import { Observable, of } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { Router } from '@angular/router'; //para redirigir en el logout
 import { jwtDecode } from 'jwt-decode';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  // puerto donde corre la API de Express
-  private baseUrl = 'http://localhost:3000'; 
+  // URL del backend desde environment (se adapta a producción/desarrollo)
+  private baseUrl = environment.apiUrl; 
   private tokenKey = 'auth_token';
 
 constructor(private http: HttpClient, private router: Router) { }

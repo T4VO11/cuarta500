@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -9,7 +10,7 @@ import { Observable } from 'rxjs';
 export class AdeudoService {
   // SOLUCIÓN: Declaramos 'apiUrl' como una propiedad privada de la clase.
   // Esto hace que TypeScript la reconozca.
-  private apiUrl = 'http://localhost:3000/listadoAdeudos'; // URL base de tu API
+  private apiUrl = `${environment.apiUrl}/listadoAdeudos`; // URL base de tu API
   
   // Usamos inject() para el HttpClient (inyección moderna)
   private http = inject(HttpClient); 

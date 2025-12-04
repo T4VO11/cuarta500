@@ -1,12 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ReservacionService {
-  private apiUrl = 'http://localhost:3000/reservaciones'; 
+  private apiUrl = `${environment.apiUrl}/reservaciones`; 
   private http = inject(HttpClient);
 
   // OBTENER TODAS las reservaciones (index)

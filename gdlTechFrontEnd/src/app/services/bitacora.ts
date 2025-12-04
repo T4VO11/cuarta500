@@ -1,13 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BitacoraService {
   // Ruta base del módulo de Bitácoras
-  private apiUrl = 'http://localhost:3000/bitacoras'; 
+  private apiUrl = `${environment.apiUrl}/bitacoras`; 
   private http = inject(HttpClient);
 
   // 1. OBTENER TODAS las bitácoras (index)

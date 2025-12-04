@@ -1,12 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class IncidenteService {
-  private apiUrl = 'http://localhost:3000/incidentes'; 
+  private apiUrl = `${environment.apiUrl}/incidentes`; 
   private http = inject(HttpClient);
 
   // 1. OBTENER TODOS (index)
