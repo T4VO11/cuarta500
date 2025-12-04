@@ -1,0 +1,24 @@
+# Configuración de Render para el Backend Express
+# Este archivo debe estar en la RAÍZ del repositorio de GitHub
+
+services:
+  - type: web
+    name: cuarta500-backend
+    # Directorio raíz del backend
+    # Si tu repo tiene estructura: repo-root/cuarta500/gdlTechBackEnd/
+    # usa: rootDir: cuarta500/gdlTechBackEnd
+    # Si tu repo tiene estructura: repo-root/gdlTechBackEnd/
+    # usa: rootDir: gdlTechBackEnd
+    rootDir: gdlTechBackEnd
+    # Comando para instalar dependencias
+    buildCommand: npm install
+    # Comando para iniciar el servidor
+    startCommand: npm start
+    # Variables de entorno (configurar en el dashboard de Render, NO aquí)
+    # Ve al dashboard de Render > Environment y agrega:
+    # - NODE_ENV = production
+    # - PORT = 3000
+    # - MONGODB_URI = tu-uri-de-mongodb
+    # - JWT_SECRET = tu-secreto-jwt
+    # - ENCRYPTION_KEY = tu-clave-de-cifrado
+
