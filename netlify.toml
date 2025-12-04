@@ -6,7 +6,9 @@
   # cd al directorio del frontend, instalar dependencias y construir
   command = "cd gdlTechFrontEnd && npm install && npm run build"
   # Directorio de salida después del build (relativo a la raíz del repo)
-  publish = "gdlTechFrontEnd/dist/gdlTechFrontEnd"
+  # Angular moderno genera: dist/gdlTechFrontEnd/browser
+  # Si no funciona, prueba: gdlTechFrontEnd/dist/gdlTechFrontEnd o gdlTechFrontEnd/dist/browser
+  publish = "gdlTechFrontEnd/dist/gdlTechFrontEnd/browser"
 
 # Configuración de redirecciones para SPA (Single Page Application)
 [[redirects]]
