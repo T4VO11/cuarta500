@@ -28,24 +28,7 @@ connectDB()
     loadAtlasModels();
   });
   
-//Arranque de sincronizadores
-(async () => {
-    console.log("Esperando 2s para estabilidad de conexiones")
-    await new Promise(r => setTimeout(r, 2000));
-    
-    console.log("Ejecutando initialSync");
-    try {
-        // Await para que el worker no inicie hasta que termine el initialSync
-        await initialSync();
-        console.log("initialSync completado");
-    } catch (error) {
-        console.error('initialSync fallo: ', err);
-    }
-    console.log("Iniciando syncWorker (sincronizacion continua...");
-    startSyncWorker();
-})();
-
-//Arrancamos el servidor
+//Arrancamos el servidor PRIMERO (para que Render detecte que está listo)
 const port = process.env.PORT || 3000;
 const { setDefaultAutoSelectFamilyAttemptTimeout } = require('net');
 
@@ -173,6 +156,15 @@ app.get('/', function(req, res) {
     });
 });
 
+// Health check para Render (responde rápido sin depender de DB)
+app.get('/health', function(req, res) {
+    res.status(200).json({
+        estado: 'exito',
+        mensaje: 'Servidor funcionando',
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Manejo de errores 404 - DEBE IR AL FINAL
 app.use((req, res) => {
     res.status(404).json({
@@ -195,12 +187,32 @@ app.use((err, req, res, next) => {
 app.listen(port, () => {
     console.log(`\n Servidor corriendo en puerto ${port}`);
     console.log(` API disponible en http://localhost:${port}`);
-    // console.log(`\n📋 Rutas disponibles:`);
-    // console.log(`   POST   /usuarios/registrar`);
-    // console.log(`   POST   /usuarios/login`);
-    // console.log(`   GET    /usuarios`);
-    // console.log(`   GET    /usuarios/:id`);
-    // console.log(`   PUT    /usuarios/:id`);
-    // console.log(`   DELETE /usuarios/:id`);
     console.log(`\n Servidor listo para recibir peticiones\n`);
+    
+    // Arranque de sincronizadores EN BACKGROUND (no bloquea el servidor)
+    // Esto permite que Render detecte que el servidor está listo inmediatamente
+    (async () => {
+        console.log("Iniciando sincronizadores en background...");
+        // Reducido a 500ms para iniciar más rápido
+        await new Promise(r => setTimeout(r, 500));
+        
+        console.log("Ejecutando initialSync en background...");
+        try {
+            // No bloqueamos - se ejecuta en paralelo
+            initialSync()
+                .then(() => {
+                    console.log("✅ initialSync completado");
+                    console.log("Iniciando syncWorker (sincronizacion continua)...");
+                    startSyncWorker();
+                })
+                .catch((error) => {
+                    console.error('❌ initialSync fallo:', error.message);
+                    // Iniciar syncWorker de todas formas
+                    console.log("Iniciando syncWorker a pesar del error...");
+                    startSyncWorker();
+                });
+        } catch (error) {
+            console.error('❌ Error al iniciar syncs:', error.message);
+        }
+    })();
 });

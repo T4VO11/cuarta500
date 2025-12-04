@@ -4,12 +4,16 @@
 services:
   - type: web
     name: cuarta500-backend
-    # Directorio raíz del backend
-    # Si tu repo tiene estructura: repo-root/cuarta500/gdlTechBackEnd/
-    # usa: rootDir: cuarta500/gdlTechBackEnd
-    # Si tu repo tiene estructura: repo-root/gdlTechBackEnd/
-    # usa: rootDir: gdlTechBackEnd
-    rootDir: gdlTechBackEnd
+    # IMPORTANTE: Verifica la estructura de tu repositorio en GitHub
+    # El error indica que Render busca en: /opt/render/project/src/cuarta500/gdlTechBackEnd
+    # Si tu repo en GitHub tiene: repo-root/cuarta500/gdlTechBackEnd/package.json
+    # Entonces usa: rootDir: cuarta500/gdlTechBackEnd
+    # Si tu repo en GitHub tiene: repo-root/gdlTechBackEnd/package.json  
+    # Entonces usa: rootDir: gdlTechBackEnd
+    # 
+    # Para verificar: Ve a GitHub > tu-repo > busca package.json del backend
+    # La ruta relativa desde la raíz del repo es el rootDir
+    rootDir: cuarta500/gdlTechBackEnd
     # Comando para instalar dependencias
     buildCommand: npm install
     # Comando para iniciar el servidor
