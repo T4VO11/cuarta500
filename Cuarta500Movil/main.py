@@ -1,8 +1,13 @@
 import flet as ft
+import os
 from splash import Splashvista
 
 def main(page: ft.Page):
     try:
+        # Cambiar al directorio del script para que las rutas relativas funcionen
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        os.chdir(script_dir)
+        
         # Configurar tamaño de ventana (tamaño de teléfono)
         page.window.width = 411
         page.window.height = 831

@@ -1,0 +1,42 @@
+# Dependencias
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Archivos de entorno
+.env
+.env.local
+.env.*.local
+*.env
+
+# Tokens y datos sensibles
+token.json
+token_guardia.json
+app_config.json
+
+# Builds
+dist/
+build/
+*.log
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads (opcional - si quieres versionar las imágenes, quita esta línea)
+uploads/
+
+# Archivos temporales
+*.tmp
+*.temp
+

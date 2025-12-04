@@ -1,21 +1,23 @@
 import flet as ft
 import os
-from controller import Controlador
+from api_client import ApiClient
+from token_storage import TokenStorage
 
-class Loginvista:
+class LoginGuardiaVista:
     def __init__(self, page: ft.Page):
         self.page = page
         self.page.title = "Login"
-        self.page.bgcolor = "white"  # Fondo blanco consistente
+        self.page.bgcolor = "white"
         self.page.vertical_alignment = ft.MainAxisAlignment.CENTER
+        self.page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
         self.page.window.width = 411
         self.page.window.height = 831
         self.page.window.resizable = False
-        self.page.window.bgcolor = "white"  # Fondo de ventana blanco
+        self.page.window.bgcolor = "white"
         self.page.clean()
-        self.controlador = Controlador(page)
+        self.api_client = ApiClient()
         self.build()
-
+    
     def build(self):
         # Obtener la ruta absoluta del logo
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -78,7 +80,7 @@ class Loginvista:
         
         # Indicador de carga
         indicador_carga = ft.ProgressRing(visible=False)
-
+        
         def entrar(e):
             # Validar campos
             if not usuario.value or not password.value:
@@ -95,21 +97,27 @@ class Loginvista:
             self.page.update()
             
             # Intentar login
-            exito, mensaje = self.controlador.handle_login(usuario.value, password.value)
+            exito, mensaje, data = self.api_client.login(usuario.value, password.value)
             
-            if not exito:
+            if exito:
+                # Guardar token
+                usuario_data = None
+                if data and isinstance(data, dict):
+                    usuario_data = data.get('usuario')
+                TokenStorage.save_token(self.api_client.token, usuario_data)
+                
+                # Navegar a la vista principal del guardia
+                from scanner_qr import ScannerQRVista
+                self.page.clean()
+                ScannerQRVista(self.page, self.api_client)
+            else:
                 # Mostrar error
                 mensaje_error.value = mensaje
                 mensaje_error.visible = True
                 indicador_carga.visible = False
                 boton_entrar.disabled = False
                 self.page.update()
-
-        def ir_a_registro(e):
-            from registro import Registrovista
-            self.page.clean()
-            Registrovista(self.page)
-
+        
         # Botón de entrar con mejor estilo
         boton_entrar = ft.ElevatedButton(
             "Entrar", 
@@ -130,7 +138,7 @@ class Loginvista:
             weight=ft.FontWeight.BOLD,
             color="teal600"
         )
-
+        
         self.page.add(
             ft.Container(
                 content=ft.Column([
@@ -154,14 +162,6 @@ class Loginvista:
                         indicador_carga,
                         boton_entrar,
                     ], alignment=ft.MainAxisAlignment.CENTER),
-                    ft.Container(height=10),  # Espaciado
-                    ft.TextButton(
-                        "Ir a Registro", 
-                        on_click=ir_a_registro,
-                        style=ft.ButtonStyle(
-                            color="teal600"
-                        )
-                    ),
                 ],
                 alignment="center",
                 horizontal_alignment="center",
@@ -171,3 +171,5 @@ class Loginvista:
                 alignment=ft.alignment.center
             )
         )
+        self.page.update()
+

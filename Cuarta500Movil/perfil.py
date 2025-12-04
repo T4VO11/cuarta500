@@ -24,18 +24,41 @@ class PerfilVista:
             print(f"Error al construir perfil: {e}")
             import traceback
             traceback.print_exc()
-            # Mostrar mensaje de error al usuario
-            self.page.add(ft.Text(f"Error al cargar perfil: {str(e)}", color="red"))
+            # Mostrar mensaje de error al usuario con mejor UI
+            error_container = ft.Container(
+                content=ft.Column([
+                    ft.Text("⚠️", size=48),
+                    ft.Text(f"Error al cargar perfil", size=18, weight="bold", color="red"),
+                    ft.Text(f"{str(e)}", size=14, color="grey700"),
+                    ft.ElevatedButton(
+                        "Reintentar",
+                        on_click=lambda _: self.build(),
+                        bgcolor="teal600",
+                        color="white"
+                    )
+                ], 
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=10),
+                padding=40,
+                alignment=ft.alignment.center
+            )
+            self.page.add(error_container)
             self.page.update()
     
     def build(self):
-        # Obtener datos del usuario (se carga de forma asíncrona, pero usamos datos del token primero)
-        token, usuario_data = TokenStorage.get_token()
-        if usuario_data:
-            self.usuario_data = usuario_data
-        
-        # Cargar datos completos en segundo plano
-        self.cargar_datos_usuario()
+        try:
+            # Obtener datos del usuario (se carga de forma asíncrona, pero usamos datos del token primero)
+            token, usuario_data = TokenStorage.get_token()
+            if usuario_data:
+                self.usuario_data = usuario_data
+            
+            # Cargar datos completos en segundo plano (no bloquea la UI)
+            self.cargar_datos_usuario()
+        except Exception as e:
+            print(f"Error al iniciar build de perfil: {e}")
+            import traceback
+            traceback.print_exc()
+            # Continuar con la construcción usando datos por defecto
         
         def volver_home(e):
             from home import Homevista
@@ -338,22 +361,52 @@ class PerfilVista:
             indicator_color="teal600",
         )
         
-        self.page.add(contenido)
-        self.page.update()
+        try:
+            self.page.add(contenido)
+            self.page.update()
+        except Exception as e:
+            print(f"Error al agregar contenido al perfil: {e}")
+            import traceback
+            traceback.print_exc()
+            # Mostrar mensaje de error
+            error_msg = ft.Container(
+                content=ft.Text(f"Error al mostrar perfil: {str(e)}", color="red"),
+                padding=20
+            )
+            self.page.add(error_msg)
+            self.page.update()
     
     def cargar_datos_usuario(self):
         """Carga los datos del usuario desde el backend"""
         try:
+            # Verificar que api_client existe
+            if not self.controlador or not self.controlador.api_client:
+                print("ADVERTENCIA: api_client no disponible, usando datos del token")
+                token, usuario_data = TokenStorage.get_token()
+                if usuario_data:
+                    self.usuario_data = usuario_data
+                return
+            
             exito, usuario_completo, mensaje = self.controlador.api_client.obtener_mi_perfil()
             if exito and usuario_completo:
                 self.usuario_data = usuario_completo
+                print("Datos del perfil cargados exitosamente desde el backend")
             else:
+                print(f"ADVERTENCIA: No se pudieron obtener datos del backend: {mensaje}")
                 # Si falla, intentar obtener del token
                 token, usuario_data = TokenStorage.get_token()
                 if usuario_data:
                     self.usuario_data = usuario_data
+        except AttributeError as e:
+            print(f"Error de atributo al cargar datos del usuario: {e}")
+            # Fallback a datos del token
+            token, usuario_data = TokenStorage.get_token()
+            if usuario_data:
+                self.usuario_data = usuario_data
         except Exception as e:
             print(f"Error al cargar datos del usuario: {e}")
+            import traceback
+            traceback.print_exc()
             # Fallback a datos del token
             token, usuario_data = TokenStorage.get_token()
             if usuario_data:

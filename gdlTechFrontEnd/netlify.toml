@@ -1,0 +1,21 @@
+# Configuración de Netlify para el Frontend Angular
+# Este archivo le dice a Netlify qué construir y dónde
+
+[build]
+  # Comando para construir el proyecto Angular
+  command = "npm install && npm run build"
+  # Directorio donde está el package.json del frontend
+  base = "gdlTechFrontEnd"
+  # Directorio de salida después del build
+  publish = "gdlTechFrontEnd/dist/gdlTechFrontEnd"
+
+# Configuración de redirecciones para SPA (Single Page Application)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Variables de entorno (se configuran en el dashboard de Netlify)
+# [build.environment]
+#   API_URL = "https://tu-backend.onrender.com"
+

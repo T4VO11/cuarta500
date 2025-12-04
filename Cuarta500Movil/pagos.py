@@ -155,7 +155,19 @@ class PagosVista:
                 pass
             elif selected_index == 3:
                 # Perfil
-                print("Navegando a Perfil")
+                try:
+                    from perfil import PerfilVista
+                    self.page.clean()
+                    PerfilVista(self.page, self.controlador.api_client)
+                except Exception as ex:
+                    print(f"Error al navegar a perfil: {ex}")
+                    import traceback
+                    traceback.print_exc()
+                    # Reintentar
+                    try:
+                        PerfilVista(self.page, self.controlador.api_client)
+                    except:
+                        pass
 
         # Cargar adeudos
         self.cargar_adeudos()

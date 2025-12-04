@@ -53,13 +53,54 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads',express.static(path.join(__dirname, 'uploads')));
 
-// Middleware
-app.use(cors({
-    origin: ['http://localhost:4200', 'http://127.0.0.1:4200', 'http://localhost:3000'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+// Middleware CORS
+// En desarrollo: solo localhost
+// En producción: permite Netlify y apps móviles
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Permitir requests sin origin (apps móviles, Postman, etc.)
+        if (!origin) return callback(null, true);
+        
+        const allowedOrigins = [
+            'http://localhost:4200',
+            'http://127.0.0.1:4200',
+            'http://localhost:3000',
+            // Agregar aquí tu URL de Netlify cuando la tengas
+            // 'https://tu-app.netlify.app',
+            // En producción, puedes permitir todos los orígenes de Netlify:
+            /^https:\/\/.*\.netlify\.app$/
+        ];
+        
+        // En producción, permitir todos los orígenes (o configurar específicos)
+        if (process.env.NODE_ENV === 'production') {
+            // Opción 1: Permitir todos (menos seguro pero más fácil)
+            return callback(null, true);
+            
+            // Opción 2: Solo orígenes específicos (más seguro)
+            // if (allowedOrigins.some(allowed => {
+            //     if (allowed instanceof RegExp) {
+            //         return allowed.test(origin);
+            //     }
+            //     return allowed === origin;
+            // })) {
+            //     return callback(null, true);
+            // }
+            // return callback(new Error('Not allowed by CORS'));
+        }
+        
+        // En desarrollo, solo localhost
+        if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+};
+
+app.use(cors(corsOptions));
 
 
 // Middleware de logging para debug
