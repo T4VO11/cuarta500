@@ -1,0 +1,20 @@
+# Configuración de Netlify para el Frontend Angular
+# Este archivo debe estar en la RAÍZ del repositorio de GitHub
+
+[build]
+  # Comando para construir el proyecto Angular
+  # cd al directorio del frontend, instalar dependencias y construir
+  command = "cd gdlTechFrontEnd && npm install && npm run build"
+  # Directorio de salida después del build (relativo a la raíz del repo)
+  publish = "gdlTechFrontEnd/dist/gdlTechFrontEnd"
+
+# Configuración de redirecciones para SPA (Single Page Application)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Variables de entorno (se configuran en el dashboard de Netlify)
+# [build.environment]
+#   API_URL = "https://cuarta500-backend.onrender.com"
+

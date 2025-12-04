@@ -193,12 +193,56 @@ app.listen(port, () => {
     // Esto permite que Render detecte que el servidor está listo inmediatamente
     (async () => {
         console.log("Iniciando sincronizadores en background...");
-        // Reducido a 500ms para iniciar más rápido
-        await new Promise(r => setTimeout(r, 500));
         
-        console.log("Ejecutando initialSync en background...");
+        // Función para esperar a que una conexión esté lista
+        const waitForConnection = (connection, name, maxWait = 30000) => {
+            return new Promise((resolve, reject) => {
+                if (connection.readyState === 1) {
+                    // Ya está conectado
+                    console.log(`✅ ${name} ya está conectado`);
+                    resolve();
+                    return;
+                }
+                
+                const timeout = setTimeout(() => {
+                    connection.removeListener('connected', onConnected);
+                    connection.removeListener('error', onError);
+                    reject(new Error(`Timeout esperando conexión ${name}`));
+                }, maxWait);
+                
+                const onConnected = () => {
+                    clearTimeout(timeout);
+                    connection.removeListener('error', onError);
+                    console.log(`✅ ${name} conectado`);
+                    resolve();
+                };
+                
+                const onError = (err) => {
+                    clearTimeout(timeout);
+                    connection.removeListener('connected', onConnected);
+                    console.warn(`⚠️ Error en ${name}:`, err.message);
+                    // No rechazamos, solo continuamos (puede que la otra conexión funcione)
+                    resolve();
+                };
+                
+                connection.once('connected', onConnected);
+                connection.once('error', onError);
+            });
+        };
+        
         try {
-            // No bloqueamos - se ejecuta en paralelo
+            // Esperar a que las conexiones estén listas (con timeout)
+            console.log("Esperando conexiones MongoDB...");
+            await Promise.allSettled([
+                waitForConnection(localConn, 'MongoDB Local', 10000),
+                waitForConnection(atlasConn, 'MongoDB Atlas', 10000)
+            ]);
+            
+            // Esperar un poco más para estabilidad
+            await new Promise(r => setTimeout(r, 1000));
+            
+            console.log("Ejecutando initialSync en background...");
+            // Ejecutar initialSync
             initialSync()
                 .then(() => {
                     console.log("✅ initialSync completado");
@@ -213,6 +257,19 @@ app.listen(port, () => {
                 });
         } catch (error) {
             console.error('❌ Error al iniciar syncs:', error.message);
+            // Intentar de todas formas después de un delay
+            setTimeout(() => {
+                console.log("Reintentando initialSync después de error...");
+                initialSync()
+                    .then(() => {
+                        console.log("✅ initialSync completado (reintento)");
+                        startSyncWorker();
+                    })
+                    .catch((err) => {
+                        console.error('❌ initialSync fallo en reintento:', err.message);
+                        startSyncWorker();
+                    });
+            }, 5000);
         }
     })();
 });
